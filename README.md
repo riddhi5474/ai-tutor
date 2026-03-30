@@ -71,6 +71,10 @@ Drop **PDF** or **PPTX** files into `course_materials/`.
 ```bash
 python main.py
 ```
+for streamlit
+```bash
+python -m streamlit run app.py
+```
 
 ---
 
