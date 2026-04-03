@@ -5,7 +5,10 @@ Run: streamlit run app.py  (from inside ai_tutor/)
 
 import streamlit as st
 import os
+import shutil
+import uuid
 from pathlib import Path
+import importlib
 
 # ── page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -221,10 +224,20 @@ _DEFAULTS = {
     "faq": "",
     "api_key_set": False,
     "saved_files": [],
+    "session_id": "",
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
+
+if not st.session_state.session_id:
+    st.session_state.session_id = uuid.uuid4().hex
+
+SESSION_ROOT = Path("session_data")
+UPLOAD_DIR = SESSION_ROOT / st.session_state.session_id / "uploads"
+CLEANED_DIR = SESSION_ROOT / st.session_state.session_id / "cleaned_text"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+CLEANED_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ── lazy import of project modules ────────────────────────────────────────────
@@ -232,17 +245,24 @@ for _k, _v in _DEFAULTS.items():
 # correctly after the user has set GOOGLE_API_KEY.
 def _load_modules():
     try:
+        from core.parser import SimpleDocParser
         from core.tutor import AITutor
         from features.query import query_notebooklm_style
         from features.study_guide import generate_study_guide
         from features.faq import generate_faq
 
-        return AITutor, query_notebooklm_style, generate_study_guide, generate_faq
+        return (
+            SimpleDocParser,
+            AITutor,
+            query_notebooklm_style,
+            generate_study_guide,
+            generate_faq,
+        )
     except ImportError:
-        return None, None, None, None
+        return None, None, None, None, None
 
 
-AITutor, query_notebooklm_style, generate_study_guide, generate_faq = _load_modules()
+SimpleDocParser, AITutor, query_notebooklm_style, generate_study_guide, generate_faq = _load_modules()
 
 
 # ── source chip renderer ──────────────────────────────────────────────────────
@@ -322,19 +342,26 @@ with st.sidebar:
         label_visibility="collapsed",
     )
     if uploads:
-        mat_dir = Path("course_materials")
-        mat_dir.mkdir(exist_ok=True)
+        # Keep the Streamlit app scoped to session uploads only.
+        # Do not wipe the folder on every rerun: Streamlit reruns frequently.
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        selected_names = {f.name for f in uploads}
+        for existing in list(UPLOAD_DIR.glob("*")):
+            if existing.is_file() and existing.name not in selected_names:
+                existing.unlink()
+
+        st.session_state.saved_files = []
         for f in uploads:
-            dest = mat_dir / f.name
-            dest.write_bytes(f.read())
+            dest = UPLOAD_DIR / f.name
+            dest.write_bytes(f.getvalue())
             if f.name not in st.session_state.saved_files:
                 st.session_state.saved_files.append(f.name)
 
-    # show all files currently in course_materials/
+    # show all files currently in this session upload folder
     all_course = []
-    if Path("course_materials").exists():
-        all_course = list(Path("course_materials").glob("*.pdf")) + list(
-            Path("course_materials").glob("*.pptx")
+    if UPLOAD_DIR.exists():
+        all_course = list(UPLOAD_DIR.glob("*.pdf")) + list(
+            UPLOAD_DIR.glob("*.pptx")
         )
     for p in all_course:
         st.markdown(
@@ -351,12 +378,30 @@ with st.sidebar:
     if st.button("⚡ Build Index", use_container_width=True, disabled=not can_build):
         with st.spinner("Parsing documents & building vector index…"):
             try:
-                tutor = AITutor()
-                # tutor.load_documents()
+                upload_files = list(UPLOAD_DIR.glob("*.pdf")) + list(UPLOAD_DIR.glob("*.pptx"))
+                if CLEANED_DIR.exists():
+                    shutil.rmtree(CLEANED_DIR)
+                CLEANED_DIR.mkdir(parents=True, exist_ok=True)
+
+                parser = SimpleDocParser(input_folder=UPLOAD_DIR, output_folder=CLEANED_DIR)
+                parser.process_folder()
+                cleaned_files = list(CLEANED_DIR.glob("*.txt"))
+                if not cleaned_files:
+                    raise RuntimeError(
+                        "No readable text could be extracted from the uploaded files. "
+                        "Try a text-based PDF/PPTX or ensure OCR dependencies are installed."
+                    )
+                # Reload to pick up any changes during dev (Streamlit sometimes caches modules).
+                import core.tutor as tutor_mod
+                importlib.reload(tutor_mod)
+                tutor = tutor_mod.AITutor(course_dir=CLEANED_DIR)
                 st.session_state.tutor = tutor
                 st.session_state.index_ready = True
             except Exception as e:
-                st.error(f"Index build failed: {e}")
+                st.error(
+                    f"Index build failed: {e}\n"
+                    f"(debug: uploads={len(upload_files)}, parsed_txt={len(list(CLEANED_DIR.glob('*.txt')))}, cleaned_files={[p.name for p in cleaned_files] if 'cleaned_files' in locals() else []})"
+                )
 
     if not st.session_state.api_key_set:
         st.caption("↑ Enter API key to enable")

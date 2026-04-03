@@ -40,6 +40,14 @@ class AITutor:
         from llama_index.llms.gemini import Gemini
         from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
+        course_dir = Path(course_dir)
+        txt_files = list(course_dir.glob("*.txt")) if course_dir.exists() else []
+        if not txt_files:
+            raise RuntimeError(
+                f"No parsed .txt files found in {course_dir}. "
+                "Parse documents first or check PDF/PPTX extraction."
+            )
+
         print("\n🔧 Configuring models...")
         Settings.llm        = Gemini(model=GEMINI_MODEL, api_key=GEMINI_API_KEY, temperature=LLM_TEMPERATURE)
         Settings.embed_model = HuggingFaceEmbedding(model_name=EMBED_MODEL)
@@ -49,7 +57,13 @@ class AITutor:
         print(f"   Chunk size : {CHUNK_SIZE} (overlap {CHUNK_OVERLAP})")
 
         print(f"\n🔨 Building index from: {course_dir}/")
-        docs = SimpleDirectoryReader(input_dir=str(course_dir), filename_as_id=True).load_data()
+        # Explicitly require .txt so LlamaIndex doesn't skip plain text files.
+        docs = SimpleDirectoryReader(
+            input_dir=str(course_dir),
+            filename_as_id=True,
+            required_exts=[".txt"],
+            exclude_hidden=False,
+        ).load_data()
         print(f"📚 Loaded {len(docs)} document(s)")
 
         self.index = VectorStoreIndex.from_documents(docs, show_progress=True)
