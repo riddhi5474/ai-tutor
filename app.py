@@ -10,6 +10,21 @@ import uuid
 from pathlib import Path
 import importlib
 
+from config import EMBED_MODEL, GEMINI_MODEL
+from storage import (
+    append_message,
+    clear_messages,
+    conversation_paths,
+    create_conversation,
+    delete_conversation,
+    get_conversation,
+    list_conversations,
+    list_messages_for_ui,
+    set_documents_status,
+    sync_uploaded_files,
+    update_conversation_extras,
+)
+
 # ── page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI Tutor",
@@ -224,26 +239,49 @@ _DEFAULTS = {
     "faq": "",
     "api_key_set": False,
     "saved_files": [],
-    "session_id": "",
+    "active_conversation_id": "",
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
-if not st.session_state.session_id:
-    st.session_state.session_id = uuid.uuid4().hex
+if "_prev_conv_id" not in st.session_state:
+    st.session_state._prev_conv_id = None
 
-SESSION_ROOT = Path("session_data")
-UPLOAD_DIR = SESSION_ROOT / st.session_state.session_id / "uploads"
-CLEANED_DIR = SESSION_ROOT / st.session_state.session_id / "cleaned_text"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-CLEANED_DIR.mkdir(parents=True, exist_ok=True)
+
+def _ensure_active_conversation_id() -> str:
+    cid = st.session_state.active_conversation_id
+    if cid and get_conversation(cid):
+        return cid
+    convs = list_conversations()
+    if convs:
+        st.session_state.active_conversation_id = convs[0]["id"]
+    else:
+        st.session_state.active_conversation_id = create_conversation("Chat 1")
+    return st.session_state.active_conversation_id
+
+
+cid = _ensure_active_conversation_id()
+if st.session_state._prev_conv_id != cid:
+    st.session_state.chat_history = list_messages_for_ui(cid)
+    row = get_conversation(cid)
+    st.session_state.study_guide = (row or {}).get("study_guide") or ""
+    st.session_state.faq = (row or {}).get("faq") or ""
+    st.session_state.tutor = None
+    st.session_state.index_ready = False
+    st.session_state._prev_conv_id = cid
+
+UPLOAD_DIR, CLEANED_DIR = conversation_paths(cid)
 
 
 # ── lazy import of project modules ────────────────────────────────────────────
 # These must be imported at runtime so Streamlit's module cache picks them up
 # correctly after the user has set GOOGLE_API_KEY.
+_MODULE_LOAD_ERROR: str | None = None
+
+
 def _load_modules():
+    global _MODULE_LOAD_ERROR
     try:
         from core.parser import SimpleDocParser
         from core.tutor import AITutor
@@ -251,6 +289,7 @@ def _load_modules():
         from features.study_guide import generate_study_guide
         from features.faq import generate_faq
 
+        _MODULE_LOAD_ERROR = None
         return (
             SimpleDocParser,
             AITutor,
@@ -258,11 +297,53 @@ def _load_modules():
             generate_study_guide,
             generate_faq,
         )
-    except ImportError:
+    except Exception as e:
+        _MODULE_LOAD_ERROR = f"{type(e).__name__}: {e}"
         return None, None, None, None, None
 
 
 SimpleDocParser, AITutor, query_notebooklm_style, generate_study_guide, generate_faq = _load_modules()
+
+
+def _cleaned_corpus_fingerprint(cleaned_dir: Path) -> str:
+    files = sorted(cleaned_dir.glob("*.txt"))
+    if not files:
+        return ""
+    parts = [f"{p.name}:{p.stat().st_mtime_ns}" for p in files]
+    return f"{len(files)}:" + "|".join(parts)
+
+
+@st.cache_resource(show_spinner="Loading embedding model & index…")
+def _cached_aitutor(cleaned_dir_abs: str, corpus_fp: str):
+    """
+    AITutor + LlamaIndex are not reliably round-tripped through Streamlit session_state.
+    Cache by absolute cleaned_text path + corpus fingerprint so reruns reuse one instance.
+    """
+    import core.tutor as tutor_mod
+
+    importlib.reload(tutor_mod)
+    return tutor_mod.AITutor(course_dir=Path(cleaned_dir_abs))
+
+
+def _attach_tutor_from_cache(cleaned_dir: Path) -> None:
+    if not st.session_state.index_ready or AITutor is None:
+        return
+    txts = list(cleaned_dir.glob("*.txt"))
+    if not txts:
+        st.session_state.index_ready = False
+        st.session_state.tutor = None
+        return
+    fp = _cleaned_corpus_fingerprint(cleaned_dir)
+    if not fp:
+        return
+    try:
+        st.session_state.tutor = _cached_aitutor(str(cleaned_dir.resolve()), fp)
+    except Exception:
+        st.session_state.tutor = None
+        st.session_state.index_ready = False
+
+
+_attach_tutor_from_cache(CLEANED_DIR)
 
 
 # ── source chip renderer ──────────────────────────────────────────────────────
@@ -333,6 +414,46 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # ── conversations (SQLite + local storage) ────────────────────────────────
+    st.markdown("#### 💬 Conversations")
+    convs = list_conversations()
+    if convs:
+        ids = [c["id"] for c in convs]
+        try:
+            sel_index = ids.index(st.session_state.active_conversation_id)
+        except ValueError:
+            sel_index = 0
+        chosen = st.selectbox(
+            "active_conversation",
+            options=ids,
+            index=sel_index,
+            format_func=lambda x: next(c["title"] for c in convs if c["id"] == x),
+            label_visibility="collapsed",
+            key="conversation_select",
+        )
+        if chosen != st.session_state.active_conversation_id:
+            st.session_state.active_conversation_id = chosen
+            st.rerun()
+    col_nc, col_del = st.columns(2)
+    with col_nc:
+        if st.button("➕ New", use_container_width=True):
+            n = len(list_conversations()) + 1
+            st.session_state.active_conversation_id = create_conversation(f"Chat {n}")
+            st.session_state._prev_conv_id = None
+            st.rerun()
+    with col_del:
+        if st.button("🗑 Delete", use_container_width=True) and convs:
+            cur = st.session_state.active_conversation_id
+            delete_conversation(cur)
+            remaining = list_conversations()
+            st.session_state.active_conversation_id = (
+                remaining[0]["id"] if remaining else create_conversation("Chat 1")
+            )
+            st.session_state._prev_conv_id = None
+            st.rerun()
+
+    st.markdown("---")
+
     # ── file uploader ─────────────────────────────────────────────────────────
     st.markdown("#### 📂 Course Materials")
     uploads = st.file_uploader(
@@ -342,20 +463,11 @@ with st.sidebar:
         label_visibility="collapsed",
     )
     if uploads:
-        # Keep the Streamlit app scoped to session uploads only.
-        # Do not wipe the folder on every rerun: Streamlit reruns frequently.
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        selected_names = {f.name for f in uploads}
-        for existing in list(UPLOAD_DIR.glob("*")):
-            if existing.is_file() and existing.name not in selected_names:
-                existing.unlink()
-
-        st.session_state.saved_files = []
-        for f in uploads:
-            dest = UPLOAD_DIR / f.name
-            dest.write_bytes(f.getvalue())
-            if f.name not in st.session_state.saved_files:
-                st.session_state.saved_files.append(f.name)
+        sync_uploaded_files(cid, UPLOAD_DIR, uploads)
+        st.session_state.saved_files = [f.name for f in uploads]
+        st.session_state.index_ready = False
+        st.session_state.tutor = None
 
     # show all files currently in this session upload folder
     all_course = []
@@ -391,13 +503,18 @@ with st.sidebar:
                         "No readable text could be extracted from the uploaded files. "
                         "Try a text-based PDF/PPTX or ensure OCR dependencies are installed."
                     )
-                # Reload to pick up any changes during dev (Streamlit sometimes caches modules).
-                import core.tutor as tutor_mod
-                importlib.reload(tutor_mod)
-                tutor = tutor_mod.AITutor(course_dir=CLEANED_DIR)
-                st.session_state.tutor = tutor
+                set_documents_status(cid, "parsed")
+                fp = _cleaned_corpus_fingerprint(CLEANED_DIR)
+                st.session_state.tutor = _cached_aitutor(str(CLEANED_DIR.resolve()), fp)
                 st.session_state.index_ready = True
+                set_documents_status(cid, "indexed")
+                update_conversation_extras(
+                    cid,
+                    embedding_model=EMBED_MODEL,
+                    llm_model=GEMINI_MODEL,
+                )
             except Exception as e:
+                set_documents_status(cid, "failed", str(e))
                 st.error(
                     f"Index build failed: {e}\n"
                     f"(debug: uploads={len(upload_files)}, parsed_txt={len(list(CLEANED_DIR.glob('*.txt')))}, cleaned_files={[p.name for p in cleaned_files] if 'cleaned_files' in locals() else []})"
@@ -425,6 +542,7 @@ with st.sidebar:
 
     st.markdown("---")
     if st.button("🗑 Clear chat", use_container_width=True):
+        clear_messages(cid)
         st.session_state.chat_history = []
         st.rerun()
 
@@ -532,25 +650,34 @@ with tab_chat:
     # ── handle submit ─────────────────────────────────────────────────────────
     if send and user_q.strip():
         q = user_q.strip()
+        append_message(cid, "user", q)
         st.session_state.chat_history.append(
             {"role": "user", "content": q, "sources": [], "followups": []}
         )
 
-        answer, sources, followups = "⚠️ Module import error.", [], []
+        answer, sources, followups = "", [], []
 
-        if query_notebooklm_style and st.session_state.tutor:
+        if not query_notebooklm_style:
+            answer = (
+                "⚠️ Could not load chat modules. "
+                f"{_MODULE_LOAD_ERROR or 'Unknown error'}"
+            )
+        elif not st.session_state.tutor:
+            answer = (
+                "⚠️ Tutor is not loaded. Click **⚡ Build Index** again "
+                "(or wait for the embedding model to finish loading)."
+            )
+        else:
             with st.spinner("Thinking…"):
                 try:
-                    # ✅ Exact signature: query_notebooklm_style(question, tutor)
                     result = query_notebooklm_style(q, st.session_state.tutor)
                     answer = result.get("answer", "")
-                    # ✅ key is "sources" (list of {metadata, score, text} dicts)
                     sources = result.get("sources", [])
-                    # ✅ key is "follow_ups" (as named in query.py return dict)
                     followups = result.get("follow_ups", [])
                 except Exception as e:
                     answer = f"⚠️ Error: {e}"
 
+        append_message(cid, "ai", answer, sources=sources, followups=followups)
         st.session_state.chat_history.append(
             {
                 "role": "ai",
@@ -615,10 +742,8 @@ with tab_guide:
                     # ✅ Exact signature: generate_study_guide(topic, tutor)
                     guide = generate_study_guide(topic, st.session_state.tutor)
                     st.session_state.study_guide = guide
-                    out = Path("output")
-                    out.mkdir(exist_ok=True)
-                    (out / "study_guide.txt").write_text(guide, encoding="utf-8")
-                    st.success("Saved to output/study_guide.txt")
+                    update_conversation_extras(cid, study_guide=guide)
+                    st.success("Study guide saved to this conversation.")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
@@ -693,10 +818,8 @@ with tab_faq:
                         topic, st.session_state.tutor, num_questions=faq_n
                     )
                     st.session_state.faq = faq
-                    out = Path("output")
-                    out.mkdir(exist_ok=True)
-                    (out / "faq.txt").write_text(faq, encoding="utf-8")
-                    st.success("Saved to output/faq.txt")
+                    update_conversation_extras(cid, faq=faq)
+                    st.success("FAQ saved to this conversation.")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
