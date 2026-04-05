@@ -1,0 +1,239 @@
+Source: Day12.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Wired
+Networks
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Ethernet
+•
+Telephone Networks
+•
+Cable Networks
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Introduction
+•
+In 1985, the Computer Society of the IEEE started a
+project, called Project 802, to set standards to enable
+intercommunication among equipment from a variety
+of manufacturers.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Ethernet evolution
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Standard Ethernet
+•
+We refer to the original Ethernet technology with the
+data rate of 10 Mbps as the Standard Ethernet.
+•
+There are some features of the Standard Ethernet
+that have not changed during the evolution.
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Example
+•
+Show how the address 47:20:1B:2E:08:EE is sent out
+online.
+•
+Solution: The address is sent left to right, byte by
+byte; for each byte, it is sent right to left, bit by bit, as
+shown below:
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Addressing
+•
+Each station on an Ethernet network (such as a PC,
+workstation, or printer) has its own network interface
+card (NIC).
+•
+The NIC fits inside the station and provides the
+station with a link-layer address. The Ethernet
+address is 6 bytes (48 bits), normally written in
+hexadecimal notation, with a colon between the
+bytes.
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Unicast and multicast addresses
+•
+Define the type of the following destination addresses:
+•
+4A:30:10:21:10:1A
+•
+47:20:1B:2E:08:EE
+•
+FF:FF:FF:FF:FF:FF
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Access Method
+•
+The standard Ethernet protocol is mostly used for a
+broadcast network
+•
+We use an access method to control access to the
+sharing medium.
+•
+The standard Ethernet chose CSMA/CD with 1-
+persistent method
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Changes in the Standard
+•
+Sharing bandwidth
+•
+Domains
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Fast Ethernet
+•
+In the 1990s, Ethernet made a big jump by increasing
+the transmission rate to 100 Mbps, and the new
+generation was called the Fast Ethernet.
+•
+The MAC sublayer was left unchanged.
+•
+However, the features of the Standard Ethernet that
+depend on the transmission rate, had to be changed.
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Access Method
+•
+The proper operation of the CSMA/CD depends
+on the transmission rate, the minimum size of the
+frame, and the maximum network length.
+•
+If we want to keep the minimum size of the frame,
+the maximum length of the network should be
+changed.
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Example
+•
+If the minimum frame size is still 512 bits, and it is
+transmitted 10 times faster, the collision needs to be
+detected 10 times sooner
+•
+Therefore, the maximum length of the network
+should be 10 times shorter (the propagation speed
+does not change).
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Gigabit Ethernet
+•
+The need for an even higher data rate resulted in the
+design of the Gigabit Ethernet Protocol (1000 Mbps).
+•
+The IEEE committee calls it the Standard 802.3z.
+•
+The goals of the Gigabit Ethernet were to upgrade the
+data rate to 1 Gbps, but keep the address length, the
+frame format, and the maximum and minimum frame
+length the same.
+•
+Almost all implementations of Gigabit Ethernet follow
+the full-duplex approach
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+10 Gigabit Ethernet
+•
+In recent years, there has been another look into the
+Ethernet for use in metropolitan areas – LAN and
+MAN (metropolitan area network).
+•
+The IEEE committee created 10 Gigabit Ethernet
+and called it Standard 802.3ae.
+•
+10 Gigabit Ethernet operates only in full-duplex
+mode, which means there is no need for contention;
+CSMA/CD is not used in 10 Gigabit Ethernet.
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Telephone
+•
+The telephone network has several levels of
+switching offices such as end offices, tandem offices,
+and regional offices.
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Signaling
+•
+The telephone network, at its beginning, used a
+circuit-switched network with dedicated links to
+transfer voice communication.
+•
+Later, the signaling system became automatic. Rotary
+telephones were invented that sent a digital signal
+defining each digit in a multi-digit telephone number.
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Data transfer and signaling
+network
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Cable networks
+•
+The cable networks became popular with people who
+just wanted a better signal.
+•
+In addition, cable networks enabled access to remote
+broadcasting stations via microwave connections.
+•
+It was initially called community antenna television
+(CATV) because an antenna at the top of a tall hill or
+building received the signals from the TV stations
+and distributed them, via coaxial cables, to the
+community.
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Traditional cable TV network
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+Hybrid fiber-coaxial network
+•
+The transmission medium from the cable TV office
+to a box, called the fiber node, is optical fiber; from
+the fiber node through the neighborhood and into
+the house is still coaxial cable.
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Next Class
+•
+Wired Network
+•
+SONET
+•
+ATM
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 23

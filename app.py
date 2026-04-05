@@ -232,17 +232,26 @@ for _k, _v in _DEFAULTS.items():
 # correctly after the user has set GOOGLE_API_KEY.
 def _load_modules():
     try:
+        from core.parser import SimpleDocParser
         from core.tutor import AITutor
         from features.query import query_notebooklm_style
         from features.study_guide import generate_study_guide
         from features.faq import generate_faq
 
-        return AITutor, query_notebooklm_style, generate_study_guide, generate_faq
+        return (
+            SimpleDocParser,
+            AITutor,
+            query_notebooklm_style,
+            generate_study_guide,
+            generate_faq,
+        )
     except ImportError:
-        return None, None, None, None
+        return None, None, None, None, None
 
 
-AITutor, query_notebooklm_style, generate_study_guide, generate_faq = _load_modules()
+SimpleDocParser, AITutor, query_notebooklm_style, generate_study_guide, generate_faq = (
+    _load_modules()
+)
 
 
 # ── source chip renderer ──────────────────────────────────────────────────────
@@ -346,11 +355,16 @@ with st.sidebar:
 
     # ── build index ───────────────────────────────────────────────────────────
     can_build = (
-        st.session_state.api_key_set and bool(all_course) and (AITutor is not None)
+        st.session_state.api_key_set
+        and bool(all_course)
+        and (AITutor is not None)
+        and (SimpleDocParser is not None)
     )
     if st.button("⚡ Build Index", use_container_width=True, disabled=not can_build):
         with st.spinner("Parsing documents & building vector index…"):
             try:
+                parser = SimpleDocParser()
+                parser.process_folder()
                 tutor = AITutor()
                 # tutor.load_documents()
                 st.session_state.tutor = tutor

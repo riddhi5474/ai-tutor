@@ -1,0 +1,187 @@
+Source: Day16.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Wireless
+Networks (Part-II)
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Cellular Telephony
+•
+Satellite Networks
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Cellular Telephony
+•
+Cellular telephony is designed to provide communications
+between two moving units, called mobile stations (MSs),
+or between one mobile unit and one stationary unit, often
+called a land unit.
+•
+A service provider must be able to locate and track a
+caller, assign a channel to the call, and transfer the
+channel from base station to base station as the caller
+moves out of range.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Cellular System
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Operation
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+First Generation (1G)
+•
+Cellular telephony is now in its fourth generation.
+•
+The first generation was designed for voice
+communication using analog signals.
+•
+One first-generation mobile system used in North
+America.
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Reverse communication band
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Second Generation (2G)
+•
+To provide higher-quality (less noise-prone) mobile
+voice communications, the second generation of the
+cellular phone network was developed.
+•
+While the first generation was designed for analog
+voice communication, the second generation was
+mainly designed for digitized voice.
+•
+Three major systems evolved in the second
+generation: D-AMPS, GSM, and IS-95.
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+GSM bands
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Third Generation (3G)
+•
+The third generation of cellular telephony refers to a
+combination of technologies that provide both
+digital data and voice communication.
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Fourth Generation (4G)
+•
+The fourth generation of cellular telephony is
+expected to be a complete evolution in wireless
+communications.
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Fifth Generation (5G)
+•
+5G enables a new kind of network that is designed to
+connect virtually everyone and everything together
+including machines, objects, and devices.
+•
+5G wireless technology is capable of high data speeds,
+ultra low latency, more reliability, massive network capacity,
+increased availability, and a more uniform user experience
+to more users.
+source: https://www.qualcomm.com/5g
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Sixth Generation (6G)
+•
+6G is a standard currently under development for
+wireless communications technologies supporting
+cellular data networks.
+•
+It will serve as a distributed neural network that
+provides communication links to fuse the physical
+and cyber worlds.
+source: https://www.huawei.com/en/technology-insights/future-technologies/6g-the-next-horizon
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Satellite Network
+•
+A satellite network is a combination of nodes, some
+of which are satellites, that provides communication
+from one point on the Earth to another.
+•
+A node in the network can be a satellite, an Earth
+station, or an end-user terminal or telephone.
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Operation
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Satellite orbit altitudes
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+GEO Satellites
+•
+To ensure constant
+communication, the satellite
+must move at the same
+speed as the Earth so that it
+seems to remain fixed above
+a certain spot.
+•
+Such satellites are called
+GEO Satellites or
+geostationary.
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+MEO Satellites
+•
+Medium-Earth-orbit (MEO)
+satellites are positioned
+between the two Van Allen
+belts.
+•
+A satellite at this orbit takes
+approximately 6 to 8 hours
+to circle the Earth
+•
+Application - GPS
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+LEO Satellites
+•
+A low Earth orbit (LEO) is near the planet and have
+a period of 128 minutes or less
+•
+Example: International Space Station
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Next Class
+•
+Connecting Devices and Virtual LANs
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 21

@@ -1,0 +1,247 @@
+Source: Day7.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Introduction To
+Data-Link Layer
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Communications in Data Link Layer
+•
+Link Layer Addressing
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Introduction
+•
+The Internet is a combination of networks glued
+together by connecting devices (routers or switches).
+If a packet is to travel from a host to another host, it
+needs to pass through these networks. Figure 9.1
+shows the same scenario we discussed in Chapter 3,
+but we are now interested in communication at the
+data-link layer.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Communication at the data-link
+layer
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Nodes and Links
+•
+Communication at the data-link layer is node-to-
+node.
+•
+A data unit from one point on the Internet needs to
+pass through many networks (LANs and WANs) to
+reach another point. Theses LANs and WANs are
+connected by routers.
+•
+It is customary to refer to the two end hosts and the
+routers as nodes and the networks in between as
+links.
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Nodes and Links (Contd.)
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Services
+•
+The data-link layer is located between the physical
+and the network layers. The data-link layer provides
+services to the network layer; it receives services
+from the physical layer. Let us discuss services
+provided by the data-link layer.
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+A communication with only
+three nodes
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Two Categories of Links
+•
+Although two nodes are physically connected by a
+transmission medium such as cable or air, we need to
+remember that the data-link layer controls how the
+medium is used.
+•
+We can have a data-link layer that uses the whole
+capacity of the medium; we can also have a data-link
+layer that uses only part of the capacity of the link.
+In other words, we can have a point-to-point link or a
+broadcast link.
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Two Sublayers
+•
+To better understand the functionality of and the
+services provided by the link layer, we can divide the
+data-link layer into two sublayers:
+•
+Data link control (DLC)
+•
+Media access control (MAC).
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Dividing the data-link layer into
+two sublayers
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Link Layer Addressing
+•
+IP addresses used as the identifiers at the network
+layer.
+•
+However, in an internetwork such as the Internet we
+cannot make a datagram reach its destination using
+only IP addresses.
+•
+The source and destination IP addresses define the
+two ends but cannot define which links the packet
+should pass through.
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+IP addresses and link-layer
+addresses in a small internet
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Three Types of addresses
+•
+Some link-layer protocols define three types of
+addresses:
+•
+Unicast
+•
+Multicast
+•
+Broadcast
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Unicast
+•
+The unicast link-layer addresses in the most common
+LAN, Ethernet, are 48 bits (six bytes) that are
+presented as 12 hexadecimal digits separated by
+colons
+•
+For example, the following is a link-layer address of a
+computer. The second digit needs to be an odd
+number.
+A3:34:45:11:92:F1
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Multicast
+•
+The multicast link-layer addresses in the most
+common LAN, Ethernet, are 48 bits (six bytes) that
+are presented as 12 hexadecimal digits separated by
+colons.
+•
+The second digit, however, needs to be an even
+number in hexadecimal. The following shows a
+multicast address:
+A2:34:45:11:92:F1
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Broadcast
+•
+the broadcast link-layer addresses in the most
+common LAN, Ethernet, are 48 bits, all 1s, that are
+presented as 12 hexadecimal digits separated by
+colons.
+•
+The following shows a broadcast address:
+FF:FF:FF:FF:FF:FF
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Address Resolution Protocol
+•
+Anytime a node has an IP datagram to send to
+another node in a link, it has the IP address of the
+receiving node.
+•
+However, the IP address of the next node is not
+helpful in moving a frame through a link; we need
+the link-layer address of the next node.
+•
+This is the time when the Address Resolution
+Protocol (ARP) becomes helpful.
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Position of ARP in TCP/IP
+protocol suite
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+ARP Operation
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+ARP Packet
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Example
+•
+A host with IP address N1 and MAC address L1 has
+a packet to send to another host with IP address N2
+and physical address L2 (which is unknown to the
+first host). The two hosts are on the same network
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+Example (Contd.)
+Computer Networks (CS 306), IIT Indore 23
+
+--- Page 24 ---
+The internet for the example
+Computer Networks (CS 306), IIT Indore 24
+
+--- Page 25 ---
+Flow of packets at Alice site
+Computer Networks (CS 306), IIT Indore 25
+
+--- Page 26 ---
+Flow of activities at router R1
+Computer Networks (CS 306), IIT Indore 26
+
+--- Page 27 ---
+Flow of activities at router R2
+Computer Networks (CS 306), IIT Indore 27
+
+--- Page 28 ---
+Activities at Bob’s site
+Computer Networks (CS 306), IIT Indore 28
+
+--- Page 29 ---
+Next Class
+•
+Error Detection and Correction
+Computer Networks (CS 306), IIT Indore 29
+
+--- Page 30 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 30

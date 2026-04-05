@@ -1,0 +1,104 @@
+Source: Day17.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Connecting
+Devices and Virtual LANs
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Connecting Devices
+•
+Virtual LANs
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Connecting Devices
+•
+Hosts and networks do not normally operate in
+isolation.
+•
+We use connecting devices to connect hosts together
+to make a network or to connect networks together
+to make an internet.
+•
+Connecting devices are of three kinds of connecting
+devices: hubs, link-layer switches, and routers.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Three categories of connecting
+devices
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Hubs
+•
+A hub is a device that operates only in the physical
+layer.
+•
+Signals that carry information within a network can
+travel a fixed distance before attenuation endangers
+the integrity of the data.
+•
+A repeater receives a signal and, before it becomes
+too weak or corrupted, regenerates and retimes the
+original bit pattern.
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Link-Layer Switches
+•
+A link-layer switch (or switch) operates in both the
+physical and the data-link layers.
+•
+As a physical-layer device, it regenerates the signal it
+receives. As a link-layer device, the link-layer switch
+can check the MAC addresses (source and
+destination) contained in the frame.
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Routers
+•
+A router is a three-layer device; it operates in the
+physical, data-link, and network layers.
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Virtual LANs
+•
+A station is considered part of a LAN if it physically
+belongs to that LAN. The criterion of membership is
+geographic.
+•
+We can roughly define a virtual local area network
+(VLAN) as a local area network configured by
+software, not by physical wiring.
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+A switch using VLAN software
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Membership & Configuration
+•
+Vendors use different characteristics such as interface
+numbers, port numbers, MAC addresses, IP
+addresses, IP multicast addresses, or a combination
+of two or more of these.
+•
+Stations are configured in one of three ways:
+manually, semi-automatically, and automatically.
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 11

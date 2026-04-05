@@ -1,0 +1,250 @@
+Source: Day10.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Media
+Access Control
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Random Access
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Taxonomy of multiple-access
+protocols
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Random Access
+•
+In random-access or contention no station is
+superior to another station, and none is assigned
+control over another.
+•
+At each instance, a station that has data to send uses
+a procedure defined by the protocol to decide on
+whether to send.
+•
+This decision depends on the state of the medium
+(idle or busy).
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+ALOHA
+•
+ALOHA, the earliest random access method, was
+developed at the University of Hawaii in early 1970.
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+ALOHA
+•
+It was designed for a radio (wireless) LAN, but it can
+be used on any shared medium.
+•
+It is obvious that there are potential collisions in this
+arrangement. The medium is shared between the
+stations. When a station sends data, another station
+may attempt to do so at the same time. The data
+from the two stations collide and become garbled.
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Procedure for pure ALOHA
+protocol
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Example
+•
+The stations on a wireless ALOHA network are a
+maximum of 900 km apart. If we assume that signals
+propagate at 3 × 10^8 m/s, we find Tp = (900 ×
+10^3) / (3 × 10^8) = 3 ms.
+•
+For K = 2, the range of R is {0, 1, 2, 3}.
+•
+This means that T can be 0, 3, 6, or 9 ms, based on
+B
+the outcome of the random variable R.
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Vulnerable time for pure
+ALOHA protocol
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Example
+•
+A pure ALOHA network transmits 200-bit frames
+on a shared channel of 200 kbps. What is the
+requirement to make this frame collision-free?
+•
+Solution: Average frame transmission time T is 200
+fr
+bits/200 kbps or 1 ms. The vulnerable time is 2 × 1
+ms = 2 ms. This means no station should send later
+than 1 ms before this station starts transmission and
+no station should start sending during the period (1
+ms) that this station is sending.
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Frames in a slotted ALOHA
+network
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Vulnerable time for slotted
+ALOHA protocol
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Carrier sense multiple access
+(CSMA)
+•
+To minimize the chance of collision and, therefore,
+increase the performance, the CSMA method was
+developed.
+•
+CSMA requires that each station first listen to the
+medium (or check the state of the medium) before
+sending. In other words, CSMA is based on the
+principle “sense before transmit” or “listen before
+talk.”
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Space/time model of a collision
+in CSMA
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Vulnerable time in CSMA
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Behavior of three persistence
+methods
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Flow diagram for three
+persistence methods
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+CSMA/CD
+•
+The CSMA method does not specify the procedure
+following a collision. Carrier sense multiple access
+with collision detection (CSMA/CD) augments the
+algorithm to handle the collision.
+•
+In this method, a station monitors the medium after
+it sends a frame to see if the transmission was
+successful. If so, the station is finished. If, however,
+there is a collision, the frame is sent again.
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Collision of the first bits in
+CSMA/CD
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Collision and abortion in
+CSMA/CD
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+Example
+•
+A network using CSMA/CD has a bandwidth of 10
+Mbps. If the maximum propagation time is 25.6 μs,
+what is the minimum size of the frame?
+•
+Solution: The minimum frame transmission time is
+T = 2 × Tp = 512.2 μs. This means, in the worst
+fr
+case, a station needs to transmit for a period of 512.2
+μs to detect the collision. The minimum size of the
+frame is 10 Mbps × 512.2 μs = 512 bits or 64 bytes.
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Flow diagram for the CSMA/CD
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+Energy level during transmission,
+idleness, or collision
+Computer Networks (CS 306), IIT Indore 23
+
+--- Page 24 ---
+CSMA/CA
+•
+Carrier sense multiple access with collision avoidance
+(CSMA/CA) was invented for wireless networks.
+•
+Collisions are avoided using CSMA/CA’s three
+strategies:
+•
+The interframe space
+•
+The contention window
+•
+Acknowledgments
+Computer Networks (CS 306), IIT Indore 24
+
+--- Page 25 ---
+Flow diagram for CSMA/CA
+Computer Networks (CS 306), IIT Indore 25
+
+--- Page 26 ---
+Contention window
+•
+DIFS: DCF Interframe Space
+•
+SIFS: Short Interframe Space
+Computer Networks (CS 306), IIT Indore 26
+
+--- Page 27 ---
+CSMA/CA
+Computer Networks (CS 306), IIT Indore 27
+
+--- Page 28 ---
+CSMA/CA (Contd.)
+•
+Request to Send (RTS)
+•
+Clear to Send (CTS)
+•
+Network Allocation Vector (NAV)
+•
+Acknowledgement (ACK)
+Computer Networks (CS 306), IIT Indore 28
+
+--- Page 29 ---
+Next Class
+•
+Media Access Control
+•
+Controlled Access
+•
+Channelization
+•
+Wired LANs
+Computer Networks (CS 306), IIT Indore 29
+
+--- Page 30 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 30

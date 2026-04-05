@@ -1,0 +1,123 @@
+Source: Day15.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Wireless
+Networks (Part-II)
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Bluetooth
+•
+WiMAX
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+BLUETOOTH
+•
+Bluetooth is a wireless LAN technology designed to
+connect devices of different functions when they are
+at a short distance from each other.
+•
+A Bluetooth LAN is an ad hoc network.
+•
+The devices, sometimes called gadgets, find each
+other and make a network called a piconet.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Architecture
+•
+Bluetooth defines two types of networks:
+•
+Piconet
+•
+Scatternet
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Single-secondary communication
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Multiple-secondary
+communication
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Frame format
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+WiMAX
+•
+WiMAX has been designed for the types of
+applications
+•
+People want to have access to the Internet from home or
+office (fixed) where the wired access to the Internet is
+either not available or is expensive.
+•
+People also need to access the Internet when they are using
+their cellular phones.
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Services
+•
+WiMAX provides two types of services to
+subscribers:
+•
+Fixed
+•
+Mobile
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Fixed WiMAX
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Mobile WiMAX
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+IEEE Project 802.16
+•
+WiMAX is the result of the IEEE 802.16 project.
+•
+The standard is sometimes referred to as wireless local
+loop, in contrast with wired local loop (dial-up, DLS, or
+cable).
+•
+IEEE 802.16 is a standard for a wireless WAN (or
+MAN).
+•
+Project 802.11 defines a connectionless communication;
+project 802.16 defines a connection-oriented service.
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Layers
+•
+IEEE has divided the data-link layer into three sublayers
+and the physical layer into two sublayers.
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Next Class
+•
+Cellular Telephony
+•
+Satellite Networks
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 15

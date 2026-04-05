@@ -1,0 +1,266 @@
+Source: Day9.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Data Link
+Control
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Data Link Control Services
+•
+Data Link Control Protocols
+•
+High-Level Data Link Control
+•
+Point-to-Point Protocol
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Data Link Control Services
+•
+The data link control (DLC) deals with procedures
+for communication between two adjacent nodes no
+matter whether the link is dedicated or broadcast.
+•
+Data link control functions include framing and flow
+and error control.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Framing
+•
+The data-link layer needs to pack bits into frames, so that
+each frame is distinguishable from another.
+•
+Our postal system practices a type of framing.
+•
+The simple act of inserting a letter into an envelope separates
+one piece of information from another; the envelope serves as
+the delimiter.
+•
+Framing in the data-link layer separates a message from
+one source to a destination by adding a sender address
+and a destination address.
+•
+The destination address defines where the packet is to go; the
+sender address helps the recipient acknowledge the receipt.
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+A frame in a character-oriented
+protocol
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Byte stuffing and unstuffing
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+A frame in a bit-oriented protocol
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Bit stuffing and unstuffing
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Flow and Error Control
+•
+One of the responsibilities of the data-link control
+sublayer is flow and error control at the data-link
+layer.
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Example
+•
+If the two parties use a buffer with only one slot, the
+communication can be easier.
+•
+Assume that each data-link layer uses one single
+memory slot to hold a frame.
+•
+When this single slot in the receiving data-link layer is
+empty, it sends a note to the network layer to send
+the next frame.
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Connection
+•
+A DLC protocol can be either connectionless or
+connection-oriented.
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Data Link Layer Protocols
+•
+Traditionally four protocols have been defined for the
+data-link layer to deal with flow and error control:
+•
+Simple
+•
+Stop-and-Wait
+•
+Go-Back-N
+•
+Selective-Repeat
+•
+The first two protocols still are used at the data-link layer,
+the last two have disappeared.
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Simple Protocol
+•
+We assume that the receiver can immediately handle
+any frame it receives.
+•
+In other words, the receiver can never be
+overwhelmed with incoming frames.
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Example
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Stop-and-Wait Protocol
+•
+Stop-and-Wait protocol uses both flow and error
+control
+•
+In this protocol, the sender sends one frame at a time
+and waits for an acknowledgment before sending the
+next one
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Example
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Example (Contd.)
+•
+The first frame is sent and acknowledged.
+•
+The second frame is sent and lost. After time-out, it
+is resent.
+•
+The third frame is sent and acknowledged, but the
+acknowledgment is lost. The frame is resent.
+•
+However, there is a problem with this scheme. The
+network layer at the receiver site receives two copies
+of the third packet, which is not right.
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Example (Contd.)
+•
+Adding sequence
+numbers and
+acknowledgment
+numbers can
+prevent duplicates.
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Piggybacking
+•
+The two protocols we discussed are designed for
+unidirectional communication, although the
+acknowledgment may travel in the other direction.
+•
+Protocols have been designed in the past to allow
+data to flow in both directions. However, to make the
+communication more efficient, the data in one
+direction is piggybacked with the acknowledgment in
+the other direction.
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+High-level Data Link Control
+•
+High-level Data Link Control (HDLC) is a bit -
+oriented protocol for communication over point-to-
+point and multipoint links.
+•
+It implements the Stop-and-Wait protocol we
+discussed earlier.
+•
+This protocol is more a theoretical issue than
+practical, most of the concept defined in this
+protocol is the basis for other practical protocols
+such as PPP, Ethernet, or wireless LANs
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+Transfer Modes
+•
+HDLC provides two common transfer modes that
+can be used in different configurations:
+•
+Normal response mode (NRM)
+•
+Asynchronous balanced mode (ABM).
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Normal response mode
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+Asynchronous balanced mode
+Computer Networks (CS 306), IIT Indore 23
+
+--- Page 24 ---
+Framing
+•
+To provide the flexibility necessary to support all the
+options possible in the modes and configurations just
+described, HDLC defines three types of frames:
+•
+Information frames (I-frames)
+•
+Supervisory frames (S-frames)
+•
+Un-numbered frames (U-frames)
+Computer Networks (CS 306), IIT Indore 24
+
+--- Page 25 ---
+HDLC frames
+Computer Networks (CS 306), IIT Indore 25
+
+--- Page 26 ---
+Point-to-Point Protocol
+•
+One of the most common protocols for point-to-point
+access is the Point-to-Point Protocol (PPP).
+•
+Today, millions of Internet users who need to connect
+their home computers to the server of an Internet service
+provider use PPP.
+•
+To control and manage the transfer of data, there is a
+need for a point-to-point protocol at the data-link layer.
+•
+PPP is by far the most common
+Computer Networks (CS 306), IIT Indore 26
+
+--- Page 27 ---
+Next Class
+•
+Media Access Control
+Computer Networks (CS 306), IIT Indore 27
+
+--- Page 28 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 28

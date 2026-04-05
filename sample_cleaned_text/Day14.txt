@@ -1,0 +1,150 @@
+Source: Day14.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Wireless
+Networks
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+IEEE 802.11
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Introduction
+•
+Wireless communication is one of the fastest-
+growing technologies.
+•
+The demand for connecting devices without the use
+of cables is increasing everywhere.
+•
+Wireless LANs can be found on college campuses, in
+office buildings, and in many public areas.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Architectural Comparison
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Connection of a wired LAN and
+a wireless LAN
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Access Control
+•
+The CSMA/CD algorithm does not work in wireless
+LANs for three reasons:
+•
+Wireless hosts do not have enough power to send and
+receive at the same time.
+•
+The hidden station problem prevents collision detection
+•
+The distance between stations can be great.
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Hidden station problem
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+IEEE 802.11 PROJECT
+•
+IEEE has defined the specifications for a wireless
+LAN, called IEEE 802.11, which covers the physical
+and data-link layers. It is sometimes called wireless
+Ethernet.
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Architecture
+•
+The standard defines two kinds of services:
+•
+Basic service set (BSS)
+•
+Extended service set (ESS)
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Basic service sets (BSSs)
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Extended Service Set (ESS)
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+MAC Sublayer
+•
+IEEE 802.11 defines two MAC sublayers: the distributed
+coordination function (DCF) and point coordination
+function (PCF).
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Frame format
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Addressing Mechanism
+•
+The IEEE 802.11 addressing mechanism specifies
+four cases, defined by the value of the two flags in
+the FC field, To DS and From DS.
+•
+Each flag can be either 0 or 1, resulting in four
+different situations.
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Addressing mechanisms
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Physical Layer
+•
+All implementations, except the infrared, operate in
+the industrial, scientific, and medical (ISM) band,
+which defines three unlicensed bands in the three
+ranges 902–928 MHz, 2.400–4.835 GHz, and 5.725–
+5.850 GHz.
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Physical layer of IEEE 802.11
+FHSS
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Physical layer of IEEE 802.11
+DSSS
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Physical layer of IEEE 802.11
+infrared
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Physical layer of IEEE 802.11b
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+Next Class
+•
+Bluetooth
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 22

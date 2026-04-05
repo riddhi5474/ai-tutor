@@ -19,7 +19,10 @@ if not GEMINI_API_KEY:
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR          = Path(__file__).parent
+# COURSE_MATERIALS  = BASE_DIR / "sample_course_materials"   # Drop PDFs/PPTX here
 COURSE_MATERIALS  = BASE_DIR / "course_materials"   # Drop PDFs/PPTX here
+
+# CLEANED_TEXT_DIR  = BASE_DIR / "sample_cleaned_text"       # Parsed text output
 CLEANED_TEXT_DIR  = BASE_DIR / "cleaned_text"       # Parsed text output
 OUTPUT_DIR        = BASE_DIR / "output"             # Saved guides, FAQs, etc.
 

@@ -1,0 +1,295 @@
+Source: Day8.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Error Detection
+and Correction
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Block coding
+•
+Cyclic Codes
+•
+Checksum
+•
+Forward error correction
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Types of Errors
+•
+Whenever bits flow from one point to another, they
+are subject to unpredictable changes because of
+interference. This interference can change the shape
+of the signal.
+•
+The term single-bit error means that only 1 bit of a
+given data unit is changed
+•
+The term burst error means that 2 or more bits in the
+data unit have changed
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Single-bit and burst error
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Redundancy
+•
+The central concept in detecting or correcting errors
+is redundancy.
+•
+To be able to detect or correct errors, we need to
+send some extra bits with our data.
+•
+These redundant bits are added by the sender and
+removed by the receiver.
+•
+Their presence allows the receiver to detect or
+correct corrupted bits.
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Detection vs Correction
+•
+In error detection, we are only looking to see if any
+error has occurred. The answer is a simple yes or no.
+We are not even interested in the number of
+corrupted bits. A single-bit error is the same for us as
+a burst error.
+•
+In error correction, we need to know the exact
+number of bits that are corrupted and, more
+importantly, their location in the message.
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Coding
+•
+Redundancy is achieved through various coding
+schemes.
+•
+The sender adds redundant bits through a process
+that creates a relationship between the redundant bits
+and the actual data bits. The receiver checks the
+relationships between the two sets to detect errors.
+•
+The ratio of redundant bits to data bits and the
+robustness of the process are important factors in
+any coding scheme.
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Block Coding
+•
+In block coding, we divide our message into blocks,
+each of k bits, called datawords.
+•
+We add r redundant bits to each block to make the
+length n = k + r.
+•
+The resulting n-bit blocks are called codewords.
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Error Detection
+•
+If the following two conditions are met, the
+receiver can detect a change in the original
+codeword.
+• The receiver has (or can find) a list of valid codewords.
+• The original codeword has changed to an invalid one.
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Error Detection (Contd.)
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Example
+•
+Let us assume that k = 2 and n = 3. The list of
+datawords and codewords are as follows:
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Hamming Distance
+•
+Hamming distance is a metric for comparing two
+binary data strings.
+•
+While comparing two binary strings of equal length,
+Hamming distance is the number of bit positions in
+which the two bits are different.
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+•
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Example
+•
+The minimum Hamming distance for first example is
+2. It guarantees detection of only a single error.
+•
+If the third codeword (101) is sent and one error
+occurs, the received codeword does not match any
+valid codeword.
+•
+If two errors occur, however, the received codeword
+may match a valid codeword and the errors are not
+detected.
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Simple parity-check code C(5, 4)
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Encoder and decoder for simple
+parity-check code
+Modular Arithmetic (Modulo-2) operation
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Cyclic Code
+•
+Cyclic codes are special linear block codes with one
+extra property.
+•
+In a cyclic code, if a codeword is cyclically shifted
+(rotated), the result is another codeword.
+•
+For example, if 1011000 is a codeword and we
+cyclically left-shift, then 0110001 is also a codeword.
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Cyclic Redundancy Check
+•
+A subset of. cyclic codes is called the cyclic
+redundancy check (CRC), which is used in networks
+such as LANs and WANs.
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+CRC encoder and decoder
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Division in CRC encoder
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+Division in the CRC decoder for
+two cases
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Polynomials
+•
+A better way to understand cyclic codes and how
+they can be analyzed is to represent them as
+polynomials.
+•
+A pattern of 0s and 1s can be represented as a
+polynomial with coefficients of 0 and 1.
+•
+The power of each term shows the position of the
+bit; the coefficient shows the value of the bit.
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+A polynomial to represent a
+binary word
+Computer Networks (CS 306), IIT Indore 23
+
+--- Page 24 ---
+Encoder Using Polynomials
+Computer Networks (CS 306), IIT Indore 24
+
+--- Page 25 ---
+Standard polynomials
+Computer Networks (CS 306), IIT Indore 25
+
+--- Page 26 ---
+Checksum
+•
+Checksum is an error-detecting technique that can be
+applied to a message of any length.
+•
+In the Internet, the checksum technique is mostly
+used at the network and transport layer rather than
+the data-link layer.
+Computer Networks (CS 306), IIT Indore 26
+
+--- Page 27 ---
+Checksum (Contd.)
+Computer Networks (CS 306), IIT Indore 27
+
+--- Page 28 ---
+Example
+•
+Suppose the message is a list of five 4-bit numbers
+that we want to send to a destination. In addition to
+sending these numbers, we send the sum of the
+numbers.
+•
+For example, if the set of numbers is (7, 11, 12, 0, 6),
+we send (7, 11, 12, 0, 6, 36). The receiver adds the
+five numbers and compares the result with the sum.
+•
+If these are the same, the receiver assumes no error,
+accepts the five numbers, and discards the sum.
+Computer Networks (CS 306), IIT Indore 28
+
+--- Page 29 ---
+Example (Contd.)
+•
+In the previous example, the decimal number 36 in
+binary is (100100)2. To change it to a 4-bit number
+we add the extra leftmost bit to the right four bits as
+shown below.
+•
+Instead of sending 36 as the sum, we can send 6 as
+the sum (7, 11, 12, 0, 6, 6).
+Computer Networks (CS 306), IIT Indore 29
+
+--- Page 30 ---
+Forward Error Correction
+•
+For error detection, we definitely need more distance.
+•
+It can be shown that to detect t errors, we need to
+have d = 2t + 1.
+min
+•
+In other words, if we want to correct 10 bits in a
+packet, we need to make the minimum hamming
+distance 21 bits, which means a lot of redundant bits
+need to be sent with the data.
+Computer Networks (CS 306), IIT Indore 30
+
+--- Page 31 ---
+Hamming distance for error
+correction
+Computer Networks (CS 306), IIT Indore 31
+
+--- Page 32 ---
+Next Class
+•
+Data Link Control
+Computer Networks (CS 306), IIT Indore 32
+
+--- Page 33 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 33

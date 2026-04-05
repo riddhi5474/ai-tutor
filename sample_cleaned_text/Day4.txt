@@ -1,0 +1,220 @@
+Source: Day4.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Digital
+Transmission
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Digital-to-Digital Conversion
+•
+Analog-to-Digital Conversion
+•
+Transmission Modes
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Digital-to-Digital Conversion
+•
+The conversion of digital data to digital signal
+involves three techniques:
+•
+Line coding
+•
+Block coding
+•
+Scrambling.
+•
+Line coding is always needed; block coding and
+scrambling may or may not be needed.
+Computer Networks (CS 306), IIT Indore 4.3
+
+--- Page 4 ---
+Line Coding
+•
+Line coding converts a sequence of bits to a digital
+signal. At the sender, digital data are encoded into a
+digital signal; at the receiver, the digital data are
+recreated by decoding the digital signal.
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Signal and Data Elements
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Effect of lack of synchronization
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Line Coding Schemes
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Unipolar NRZ scheme
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Polar schemes (NRZ-L and
+NRZ-I)
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Polar schemes (RZ)
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Polar Biphase
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Bipolar schemes
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Multi-Transition MLT-3 Scheme
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Summary of line coding schemes
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Block Coding
+•
+Block coding changes a block of m bits into a block
+of n bits, where n is larger than m. Block coding is
+referred to as an mB/nB encoding technique
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Scrambling
+•
+The system needs to insert the required pulses based
+on the defined scrambling rules.
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Analog-to-Digital Conversion
+•
+To change an analog signal to digital data, we have
+two techniques:
+•
+Pulse code modulation
+•
+Delta modulation.
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Pulse Code Modulation (PCM)
+•
+The most common technique to change an analog
+signal to digital data (digitization) is called pulse code
+modulation (PCM).
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Three different sampling
+methods for PCM
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Nyquist Sampling Rate for
+Lowpass and Bandpass Signals
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+Quantization and Encoding of A
+Sampled Signal
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Components of a PCM Decoder
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+Delta Modulation (DM)
+•
+PCM is a very complex technique. Other techniques
+have been developed to reduce the complexity of
+PCM.
+•
+The simplest is delta modulation.
+•
+PCM finds the value of the signal amplitude for each
+sample; DM finds the change from the previous
+sample.
+Computer Networks (CS 306), IIT Indore 23
+
+--- Page 24 ---
+The Process of Delta
+Modulation
+Computer Networks (CS 306), IIT Indore 24
+
+--- Page 25 ---
+Delta Modulation Components
+Computer Networks (CS 306), IIT Indore 25
+
+--- Page 26 ---
+Delta Demodulation
+Components
+Computer Networks (CS 306), IIT Indore 26
+
+--- Page 27 ---
+Data Transmission Modes
+Computer Networks (CS 306), IIT Indore 27
+
+--- Page 28 ---
+Parallel Transmission
+•
+Line coding converts a sequence of bits to a digital
+signal.
+•
+At the sender, digital data are encoded into a digital
+signal; at the receiver, the digital data are recreated by
+decoding the digital signal.
+Computer Networks (CS 306), IIT Indore 28
+
+--- Page 29 ---
+Parallel Transmission (Contd.)
+Computer Networks (CS 306), IIT Indore 29
+
+--- Page 30 ---
+Serial Transmission
+•
+In serial transmission one bit follows another, so we
+need only one communication channel rather than n
+to transmit data between two communicating devices
+Computer Networks (CS 306), IIT Indore 30
+
+--- Page 31 ---
+Asynchronous Transmission
+Computer Networks (CS 306), IIT Indore 31
+
+--- Page 32 ---
+Synchronous Transmission
+Direction of flow
+Frame Frame Frame
+11110111 11111011 11110110 11110111 11110011
+Computer Networks (CS 306), IIT Indore 32
+• • •
+
+[Table 1 on Page 32]
+11111011	11110110
+
+--- Page 33 ---
+Next Class
+•
+Analog Transmission
+Computer Networks (CS 306), IIT Indore 33
+
+--- Page 34 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 34

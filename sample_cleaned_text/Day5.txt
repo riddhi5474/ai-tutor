@@ -1,0 +1,226 @@
+Source: Day5.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Analog
+Transmission
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Digital-to-Analog Conversion
+•
+Analog-to-Analog Conversion
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Digital-to-Analog Conversion
+•
+Digital-to-analog conversion is the process of
+changing one of the characteristics of an analog
+signal based on the information in digital data.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Types Digital-to-Analog
+Conversion
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Amplitude Shift Keying
+•
+Amplitude of the carrier signal is varied to create signal
+elements.
+•
+Both frequency and phase remain constant while the amplitude
+.
+changes
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Implementation of binary ASK
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Frequency Shift Keying
+•
+Frequency of the carrier signal is varied to represent
+data.
+•
+The frequency of the modulated signal is constant
+for the duration of one signal element, but changes
+for the next signal element if the data element
+changes.
+•
+Both peak amplitude and phase remain constant for
+all signal elements.
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Binary Frequency Shift Keying
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Implementation of FSK
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Phase Shift Keying
+•
+Phase of the carrier is varied to represent two or
+more different signal elements.
+•
+Both peak amplitude and frequency remain constant
+as the phase changes.
+•
+Today, PSK is more common than ASK or FSK.
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Binary phase shift keying
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Implementation of BPSK
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Implementation of QPSK
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Concept of a constellation
+diagram
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Three constellation diagrams
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Quadrature Amplitude
+Modulation
+•
+PSK is limited by the ability of the equipment to
+distinguish small differences in phase. This factor
+limits its potential bit rate.
+•
+The concept behind quadrature amplitude
+modulation (QAM) is using two carriers, where one
+in-phase and the other quadrature, with different
+amplitude levels for each carrier.
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Constellation Diagrams for Some
+QAMs
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Analog-to-Analog Conversion
+•
+Analog-to-analog conversion, or analog modulation,
+is the representation of analog information by an
+analog signal.
+•
+Modulation is needed if the medium is bandpass in
+nature or if only a bandpass channel is available to
+us.
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Types of analog-to-analog
+modulation
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Amplitude Modulation
+•
+In AM transmission, the carrier signal is modulated
+so that its amplitude varies with the changing
+amplitudes of the modulating signal.
+•
+The frequency and phase of the carrier remain the
+same; only the amplitude changes to follow variations
+in the information.
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+Amplitude Modulation (Contd.)
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+AM Band Allocation
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+Frequency Modulation
+•
+In FM transmission, the frequency of the carrier
+signal is modulated to follow the changing voltage
+level (amplitude) of the modulating signal.
+•
+The peak amplitude and phase of the carrier signal
+remain constant, but as the amplitude of the
+information signal changes, the frequency of the
+carrier changes correspondingly.
+Computer Networks (CS 306), IIT Indore 23
+
+--- Page 24 ---
+Frequency Modulation (Contd.)
+Computer Networks (CS 306), IIT Indore 24
+
+--- Page 25 ---
+Phase Modulation
+•
+In PM transmission, the phase of the carrier signal is
+modulated to follow the changing voltage level
+(amplitude) of the modulating signal.
+•
+The peak amplitude and frequency of the carrier
+signal remain constant, but as the amplitude of the
+information signal changes, the phase of the carrier
+changes correspondingly.
+Computer Networks (CS 306), IIT Indore 25
+
+--- Page 26 ---
+Phase Modulation (Contd.)
+VCO
+d/dt
+B = 2(1 + b )B
+PM
+
+f
+c
+Computer Networks (CS 306), IIT Indore 26
+
+[Table 1 on Page 26]
+VCO
+d/dt
+B = 2(1 + b )B
+PM
+
+f
+c
+
+[Table 2 on Page 26]
+VCO		
+	VCO	
+
+[Table 3 on Page 26]
+	d/dt
+
+--- Page 27 ---
+Next Class
+•
+Bandwidth Utilization and Transmission Media
+Computer Networks (CS 306), IIT Indore 27
+
+--- Page 28 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 28

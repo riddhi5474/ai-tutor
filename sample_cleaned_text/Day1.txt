@@ -1,0 +1,222 @@
+Source: Day1.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Introduction
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+Course Information
+•
+Data Communications
+•
+Networks
+•
+Network Types
+•
+Basics of Network Models
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Course Information
+•
+Course webpage
+https://www.iiti.ac.in/people/~ayanm/Courses/Spring_2022/CS306/
+•
+Course evaluation
+•
+Attendance: 10%
+•
+Assignments + Class Test: 20%
+•
+Mid Sem Exam: 25%
+•
+Final Exam: 45%
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Data Communications
+•
+When we communicate, we are sharing information.
+This sharing can be local or remote. The term
+telecommunication, which includes telephony,
+telegraph, and television, means communication at a
+distance.
+•
+Data communications are the exchange of data
+between two devices via some form of transmission
+media.
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Components
+Rule 1
+Rule 1
+Rule 2
+Rule 2
+PPrroottooccooll
+PPrroottooccooll
+Transmission Medium
+Sender Receiver
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Data Representation
+•
+Information today comes in different forms such as
+text, numbers, images, audio, and video
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Data Flow
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Networks
+•
+A network is the interconnection of a set of devices
+capable of communication. In this definition, a
+device can be a host such as a large computer,
+desktop, laptop, workstation, cellular phone, or
+security system. A device in this definition can also
+be a connecting device such as a router a switch, a
+modem that changes the form of data, and so on.
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Network Criteria
+•
+Performance
+•
+Throughput
+•
+Delay
+•
+Reliability
+•
+Security
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Physical Structures
+•
+Type of Connection
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Physical Structures (Contd.)
+•
+Physical Topology
+Mesh Topology Star Topology
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Physical Structures (Contd.)
+•
+Physical Topology
+Bus Topology
+Ring Topology
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Network Types
+•
+Personal Area Network (PAN)
+•
+Local Area Network (LAN)
+•
+Metropolitan Area Network (MAN)
+•
+Wide Area Network (WAN)
+•
+Internetwork or Internet
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Switching
+•
+An internet is a switched network in which a switch
+connects at least two links together. A switch needs
+to forward data from a network to another network
+when required. The two most common types of
+switched networks are circuit-switched and packet-
+switched networks.
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Circuit-Switched Network
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Packet-Switched Network
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+The Internet
+Peering
+Peering
+point
+point
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Network Models
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Protocols
+•
+Basically, a protocol is an agreement between the
+communicating peers on how communication is to
+proceed.
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Layering Principle
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+Layering Principle (Contd.)
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Connection-Oriented vs.
+Connectionless
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+Service Primitives
+•
+A service is formally specified by a set of primitives
+(basic operations) available to a user or other entity
+to access the service.
+Service primitives for implementing a simple connection-oriented service
+Computer Networks (CS 306), IIT Indore 23
+
+--- Page 24 ---
+The relationship of Service
+Computer Networks (CS 306), IIT Indore 24
+
+--- Page 25 ---
+OSI Reference Model
+Computer Networks (CS 306), IIT Indore 25
+
+--- Page 26 ---
+TCP/IP Reference Model
+Computer Networks (CS 306), IIT Indore 26
+
+--- Page 27 ---
+Next Class
+•
+OSI and TCP/IP Models (in detail)
+Computer Networks (CS 306), IIT Indore 27
+
+--- Page 28 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 28

@@ -1,0 +1,191 @@
+Source: Day13.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Wired
+Networks (Part-II)
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+SONET
+•
+Asynchronous Transfer Mode (ATM)
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+SONET
+•
+A wide area network (WAN), SONET, is used as a
+transport network to carry loads from other WANs.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+SONET Layers
+•
+The SONET standard includes four layers:
+•
+Photonic
+•
+Section
+•
+Line
+•
+Path layer
+•
+They correspond to both the physical and the data-
+link layers
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+SONET layers compared with
+OSI or TCP/IP
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+SONET Frames
+•
+Each synchronous transfer signal STS-n is composed
+of 8000 frames. Each frame is a two-dimensional
+matrix of bytes with 9 rows by 90 × n columns.
+•
+For example, an STS-1 frame is 9 rows by 90
+columns (810 bytes), and an STS-3 is 9 rows by 270
+columns (2430 bytes).
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+STS-1 frames in transition
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Example
+•
+Find the data rate of an STS-1 signal.
+•
+Solution: STS-1, like other STS signals, sends 8000
+frames per second. Each STS-1 frame is made of 9
+by (1 × 90) bytes. Each byte is made of 8 bits. The
+data rate is
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Example-2
+•
+Find the data rate of an STS-3 signal.
+•
+Solution: STS-3, like other STS signals, sends 8000
+frames per second. Each STS-3 frame is made of 9
+by (3 × 90) bytes. Each byte is made of 8 bits. The
+data rate is
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Example-3
+•
+What is the duration of an STS-1 frame? STS-3
+frame? STS-n frame?
+•
+Solution: In SONET, 8000 frames are sent per
+second. This means that the duration of an STS-1,
+STS-3, or STS-n frame is the same and equal to
+1/8000 s, or 125 μs.
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+STS-1 frame overheads
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+STS-1 frame path overhead
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Example
+•
+What is the user data rate of an STS-1 frame
+(without considering the overheads)?
+•
+Solution: The user data part of an STS-1 frame is
+made of 9 rows and 86 columns.
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+STS Multiplexing
+•
+In SONET, frames of lower rate can be synchronously
+time-division multiplexed into a higher-rate frame.
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Asynchronous Transfer Mode
+•
+Asynchronous Transfer Mode (ATM) is a switched
+wide area network based on the cell relay protocol
+designed by the ATM forum and adopted by the
+ITU-T.
+•
+The combination of ATM and SONET will allow
+high-speed interconnection of all the world’s
+networks.
+•
+In fact, ATM can be thought of as the “highway” of
+the information superhighway.
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Design Goals
+•
+Among the challenges faced by the designers of
+ATM, six stand out.
+•
+A transmission system to optimal use of high-data-rate.
+•
+The system must interface with existing systems.
+•
+The design must be implemented inexpensively.
+•
+The new system must support the existing hierarchies
+•
+The new system must be connection-oriented.
+•
+Move as many of the functions to hardware as possible.
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Multiplexing
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Architecture
+•
+ATM is a cell-switched network. The user access devices,
+called the endpoints, are connected through a user-to-
+network interface (UNI) to the switches inside the network.
+The switches are connected through network-to-network
+interfaces (NNIs).
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Routing with a switch
+VPI: Virtual Path
+Identifier
+VCI: Virtual
+Connection
+Identifier
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Next Class
+•
+Wireless Networks
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 21

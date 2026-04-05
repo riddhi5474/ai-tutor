@@ -1,0 +1,259 @@
+Source: Day11.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Media
+Access Control
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+Computer Networks (CS 306), IIT Indore 1
+
+--- Page 2 ---
+Outline
+•
+CSMA/CA
+•
+Controlled Access
+•
+Channelization
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Taxonomy of multiple-access
+protocols
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+CSMA/CA
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+CSMA/CA (Contd.)
+•
+Request to Send (RTS)
+•
+Clear to Send (CTS)
+•
+Network Allocation Vector (NAV)
+•
+Acknowledgement (ACK)
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+Hidden Terminal Problem
+(cid:1) (cid:3) (cid:4)
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Hidden Terminal Solution
+(cid:1) (cid:4)
+(cid:3)
+(cid:3) (cid:4)
+(cid:1)
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+Exposed Terminal Problem
+(cid:3) (cid:5)
+(cid:1) (cid:4)
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Exposed Terminal Solution
+(cid:1) (cid:3) (cid:4) (cid:5)
+(cid:1) (cid:3) (cid:4) (cid:5)
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Controlled Access
+•
+In controlled access, the stations consult one another
+to find which station has the right to send.
+•
+A station cannot send unless it has been authorized
+by other stations.
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Reservation
+•
+In the reservation method, a station needs to make a
+reservation before sending data.
+•
+Time is divided into intervals.
+•
+In each interval, a reservation frame precedes the
+data frames sent in that interval.
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Reservation access method
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Polling
+•
+Polling works with topologies in which one device is
+designated as a primary station and the other devices
+are secondary stations.
+•
+All data exchanges must be made through the
+primary device even when the ultimate destination is
+a secondary device.
+•
+The primary device controls the link; the secondary
+devices follow its instructions.
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Select and poll functions in
+polling-access method
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Token Passing
+•
+In the token-passing method, the stations in a
+network are organized in a logical ring.
+•
+In other words, for each station, there is a
+predecessor and a successor.
+•
+The predecessor is the station which is logically
+before the station in the ring; the successor is the
+station which is after the station in the ring.
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Token-passing access method
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Channelization
+•
+Channelization (or channel partition, as it is
+sometimes called) is a multiple-access method in
+which the available bandwidth of a link is shared in
+time, frequency, or through code, among different
+stations.
+•
+In this section, we discuss three protocols:
+•
+FDMA, TDMA, and CDMA.
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Frequency-Division Multiple
+Access
+•
+In frequency-division multiple access (FDMA), the
+available bandwidth is divided into frequency bands.
+Each station is allocated a band to send its data.
+•
+In other words, each band is reserved for a specific
+station, and it belongs to the station all the time.
+•
+Each station also uses a bandpass filter to confine the
+transmitter frequencies.
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+FDMA (Contd.)
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+Time-Division Multiple Access
+•
+In time-division multiple access (TDMA), the
+stations share the bandwidth of the channel in time.
+•
+Each station is allocated a time slot during which it
+can send data.
+•
+Each station transmits its data in its assigned time
+slot.
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+TDMA (Contd.)
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Code-Division Multiple Access
+•
+Code-division multiple access (CDMA) was
+conceived several decades ago. Recent advances in
+electronic technology have finally made its
+implementation possible.
+•
+CDMA differs from FDMA in that only one channel
+occupies the entire bandwidth of the link.
+•
+It differs from TDMA in that all stations can send
+data simultaneously; there is no timesharing.
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+Simple idea of communication
+with code
+Computer Networks (CS 306), IIT Indore 23
+
+--- Page 24 ---
+Chip sequences
+Computer Networks (CS 306), IIT Indore 24
+
+--- Page 25 ---
+Data representation in CDMA
+Computer Networks (CS 306), IIT Indore 25
+
+--- Page 26 ---
+Sharing channel in CDMA
+Computer Networks (CS 306), IIT Indore 26
+
+--- Page 27 ---
+Digital signal created by four
+stations in CDMA
+Computer Networks (CS 306), IIT Indore 27
+
+--- Page 28 ---
+Decoding of the composite
+signal for one in CDMA
+Computer Networks (CS 306), IIT Indore 28
+
+--- Page 29 ---
+Example
+•
+What is the number of sequences if we have 90
+stations in our network?
+Computer Networks (CS 306), IIT Indore 29
+
+--- Page 30 ---
+Example
+•
+Find the chips for a network with
+•
+Two stations
+•
+Four stations
+Computer Networks (CS 306), IIT Indore 30
+
+--- Page 31 ---
+Example
+•
+Prove that a receiving station can get the data sent by
+a specific sender if it multiplies the entire data on the
+channel by the sender’s chip code and then divides it
+by the number of stations.
+Computer Networks (CS 306), IIT Indore 31
+
+--- Page 32 ---
+Next Class
+•
+Wired Network
+Computer Networks (CS 306), IIT Indore 32
+
+--- Page 33 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 33

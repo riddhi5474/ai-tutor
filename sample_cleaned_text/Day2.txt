@@ -1,0 +1,184 @@
+Source: Day2.pdf
+============================================================
+
+--- Page 1 ---
+CS 306: Network
+Models
+Dr. Ayan Mondal
+Assistant Professor
+Dept. of CSE, IIT Indore
+https://www.iiti.ac.in/people/~ayanm/
+
+--- Page 2 ---
+Outline
+•
+Protocol Layering
+•
+OSI Model
+•
+TCP/IP Protocol
+Computer Networks (CS 306), IIT Indore 2
+
+--- Page 3 ---
+Protocol Layering
+•
+A protocol defines the rules that both the sender and
+receiver and all intermediate devices need to follow
+to be able to communicate effectively.
+•
+When communication is simple, we may need only
+one simple protocol; when the communication is
+complex, we need a protocol at each layer, or
+protocol layering.
+Computer Networks (CS 306), IIT Indore 3
+
+--- Page 4 ---
+Principles of Protocol Layering
+•
+The first principle dictates that if we want
+bidirectional communication, we need to make each
+layer so that it can perform two opposite tasks, one
+in each direction.
+•
+The second principle that we need to follow in
+protocol layering is that the two objects under each
+layer at both sites should be identical.
+Computer Networks (CS 306), IIT Indore 4
+
+--- Page 5 ---
+Logical Connections
+•
+We can think about logical connection between each
+layer. This means that we have layer-to-layer
+communication.
+•
+This logical (imaginary) connection at each layer
+enables for sending the object created from that
+layer.
+•
+We will see that the concept of logical connection
+will help us better understand the task of layering we
+encounter in data communication and networking.
+Computer Networks (CS 306), IIT Indore 5
+
+--- Page 6 ---
+OSI Model
+•
+Open Systems Interconnection model (OSI model) is
+a conceptual model that characterizes the standard
+communication functions of computing system
+•
+It was developed by the International Organization
+for Standardization (ISO)
+Computer Networks (CS 306), IIT Indore 6
+
+--- Page 7 ---
+Layers in OSI Model
+Computer Networks (CS 306), IIT Indore 7
+
+--- Page 8 ---
+TCP/IP Protocol
+•
+Transmission Control Protocol (TCP) and Internet
+Protocol (IP) are two distinct computer network
+protocols.
+•
+TCP and IP are so commonly used together, that TCP/IP
+has become standard terminology
+•
+IP is the primary way in which network connections are
+made, and it establishes the basis of the Internet.
+•
+TCP handle packet ordering or error checking
+functionality.
+Computer Networks (CS 306), IIT Indore 8
+
+--- Page 9 ---
+Layers in TCP/IP Protocol
+Computer Networks (CS 306), IIT Indore 9
+
+--- Page 10 ---
+Layered Architecture (Example)
+Computer Networks (CS 306), IIT Indore 10
+
+--- Page 11 ---
+Layered Architecture (Example)
+(Contd.)
+Computer Networks (CS 306), IIT Indore 11
+
+--- Page 12 ---
+Logical connections in TCP/IP
+Computer Networks (CS 306), IIT Indore 12
+
+--- Page 13 ---
+Logical connections in TCP/IP
+(Contd.)
+Logical connections
+Computer Networks (CS 306), IIT Indore 13
+
+--- Page 14 ---
+Logical connections in TCP/IP
+(Contd.)
+Identical objects (messages)
+Identical objects (segment or user datagram)
+Identical objects Identical objects
+(datagram) (datagram)
+Identical objects (frame) Identical objects (frame)
+Identical objects (bits) Identical objects (bits)
+Computer Networks (CS 306), IIT Indore 14
+
+--- Page 15 ---
+Encapsulation / Decapsulation
+Computer Networks (CS 306), IIT Indore 15
+
+--- Page 16 ---
+Addressing in TCP/IP
+•
+Any communication that involves two parties needs
+two addresses: source address and destination
+address.
+•
+The physical layer does not need addresses
+•
+Therefore, we have four type of addressing, i.e., one
+pair per layer.
+Computer Networks (CS 306), IIT Indore 16
+
+--- Page 17 ---
+Addressing in TCP/IP (Contd.)
+Computer Networks (CS 306), IIT Indore 17
+
+--- Page 18 ---
+Multiplexing and Demultiplexing
+•
+Multiplexing in this case means that a protocol at a
+layer can encapsulate a packet from several next-
+higher layer protocols (one at a time)
+•
+Demultiplexing means that a protocol can
+decapsulate and deliver a packet to several next-
+higher layer protocols (one at a time).
+Computer Networks (CS 306), IIT Indore 18
+
+--- Page 19 ---
+Multiplexing and Demultiplexing
+(Contd.)
+Computer Networks (CS 306), IIT Indore 19
+
+--- Page 20 ---
+TCP/IP and OSI Model
+Computer Networks (CS 306), IIT Indore 20
+
+--- Page 21 ---
+TCP/IP Reference Model
+Computer Networks (CS 306), IIT Indore 21
+
+--- Page 22 ---
+Next Class
+•
+Physical Layer
+Computer Networks (CS 306), IIT Indore 22
+
+--- Page 23 ---
+ayanm@iiti.ac.in Room No. 407, POD-1A
+Computer Networks (CS 306), IIT Indore 23

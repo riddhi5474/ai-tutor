@@ -122,7 +122,7 @@ class SimpleDocParser:
         clean = self.clean_text(raw)
 
         if len(clean) < 50:
-            print(f"   ⚠️  Insufficient text extracted")
+            print("⚠️  Insufficient text extracted")
             return None
 
         out = self.output_folder / f"{file_path.stem}.txt"
