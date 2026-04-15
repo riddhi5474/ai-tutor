@@ -680,6 +680,7 @@ with tab_chat:
     # ── handle submit ─────────────────────────────────────────────────────────
     if send and user_q.strip():
         q = user_q.strip()
+        prior_history = list(st.session_state.chat_history)
         append_message(cid, "user", q)
         st.session_state.chat_history.append(
             {"role": "user", "content": q, "sources": [], "followups": []}
@@ -697,7 +698,12 @@ with tab_chat:
             if st.session_state.tutor:
                 with st.spinner("Thinking…"):
                     try:
-                        result = query_notebooklm_style(q, st.session_state.tutor)
+                        result = query_notebooklm_style(
+                            q,
+                            st.session_state.tutor,
+                            conversation_history=prior_history,
+                            num_turns=3,
+                        )
                         answer = result.get("answer", "")
                         sources = result.get("sources", [])
                         followups = result.get("follow_ups", [])
@@ -713,7 +719,12 @@ with tab_chat:
         else:
             with st.spinner("Thinking…"):
                 try:
-                    result = query_notebooklm_style(q, st.session_state.tutor)
+                    result = query_notebooklm_style(
+                        q,
+                        st.session_state.tutor,
+                        conversation_history=prior_history,
+                        num_turns=3,
+                    )
                     answer = result.get("answer", "")
                     sources = result.get("sources", [])
                     followups = result.get("follow_ups", [])
