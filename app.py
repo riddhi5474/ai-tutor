@@ -233,6 +233,7 @@ st.markdown(
 _DEFAULTS = {
     "tutor": None,
     "index_ready": False,
+    "tutor_error": "",
     # each entry: {"role":"user"|"ai", "content":str, "sources":list[dict], "followups":list[str]}
     "chat_history": [],
     "study_guide": "",
@@ -326,21 +327,35 @@ def _cached_aitutor(cleaned_dir_abs: str, corpus_fp: str):
 
 
 def _attach_tutor_from_cache(cleaned_dir: Path) -> None:
-    if not st.session_state.index_ready or AITutor is None:
+    if AITutor is None:
         return
     txts = list(cleaned_dir.glob("*.txt"))
     if not txts:
         st.session_state.index_ready = False
         st.session_state.tutor = None
+        st.session_state.tutor_error = "No parsed text files found for this conversation."
         return
     fp = _cleaned_corpus_fingerprint(cleaned_dir)
     if not fp:
         return
     try:
         st.session_state.tutor = _cached_aitutor(str(cleaned_dir.resolve()), fp)
-    except Exception:
+        st.session_state.index_ready = True
+        st.session_state.tutor_error = ""
+    except Exception as e:
         st.session_state.tutor = None
         st.session_state.index_ready = False
+        st.session_state.tutor_error = f"{type(e).__name__}: {e}"
+
+
+def _ensure_tutor_loaded(cleaned_dir: Path) -> bool:
+    """
+    Best-effort recovery when session state loses the in-memory tutor object.
+    """
+    if st.session_state.tutor:
+        return True
+    _attach_tutor_from_cache(cleaned_dir)
+    return bool(st.session_state.tutor)
 
 
 _attach_tutor_from_cache(CLEANED_DIR)
@@ -396,7 +411,9 @@ with st.sidebar:
         key="api_key_field",
     )
     if api_key:
+        # Keep both env names in sync; different libs read different names.
         os.environ["GOOGLE_API_KEY"] = api_key
+        os.environ["GEMINI_API_KEY"] = api_key
         st.session_state.api_key_set = True
         st.markdown(
             '<span class="badge badge-green">✓ Key saved</span>', unsafe_allow_html=True
@@ -507,6 +524,7 @@ with st.sidebar:
                 fp = _cleaned_corpus_fingerprint(CLEANED_DIR)
                 st.session_state.tutor = _cached_aitutor(str(CLEANED_DIR.resolve()), fp)
                 st.session_state.index_ready = True
+                st.session_state.tutor_error = ""
                 set_documents_status(cid, "indexed")
                 update_conversation_extras(
                     cid,
@@ -515,6 +533,7 @@ with st.sidebar:
                 )
             except Exception as e:
                 set_documents_status(cid, "failed", str(e))
+                st.session_state.tutor_error = str(e)
                 st.error(
                     f"Index build failed: {e}\n"
                     f"(debug: uploads={len(upload_files)}, parsed_txt={len(list(CLEANED_DIR.glob('*.txt')))}, cleaned_files={[p.name for p in cleaned_files] if 'cleaned_files' in locals() else []})"
@@ -663,10 +682,23 @@ with tab_chat:
                 f"{_MODULE_LOAD_ERROR or 'Unknown error'}"
             )
         elif not st.session_state.tutor:
-            answer = (
-                "⚠️ Tutor is not loaded. Click **⚡ Build Index** again "
-                "(or wait for the embedding model to finish loading)."
-            )
+            _ensure_tutor_loaded(CLEANED_DIR)
+            if st.session_state.tutor:
+                with st.spinner("Thinking…"):
+                    try:
+                        result = query_notebooklm_style(q, st.session_state.tutor)
+                        answer = result.get("answer", "")
+                        sources = result.get("sources", [])
+                        followups = result.get("follow_ups", [])
+                    except Exception as e:
+                        answer = f"⚠️ Error: {e}"
+            else:
+                answer = (
+                    "⚠️ Tutor is not loaded. Click **⚡ Build Index** again "
+                    "(or wait for the embedding model to finish loading)."
+                )
+                if st.session_state.tutor_error:
+                    answer += f"\n\nDetails: {st.session_state.tutor_error}"
         else:
             with st.spinner("Thinking…"):
                 try:

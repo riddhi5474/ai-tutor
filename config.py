@@ -12,10 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── API Keys ──────────────────────────────────────────────────────────────────
-GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-
-if not GEMINI_API_KEY:
-    raise EnvironmentError("❌ GEMINI_API_KEY not found. Add it to your .env file.")
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", "")
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR          = Path(__file__).parent
