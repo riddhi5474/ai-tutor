@@ -239,6 +239,7 @@ _DEFAULTS = {
     "study_guide": "",
     "faq": "",
     "api_key_set": False,
+    "api_key_value": "",
     "saved_files": [],
     "active_conversation_id": "",
 }
@@ -415,10 +416,15 @@ with st.sidebar:
         os.environ["GOOGLE_API_KEY"] = api_key
         os.environ["GEMINI_API_KEY"] = api_key
         st.session_state.api_key_set = True
+        st.session_state.api_key_value = api_key
         st.markdown(
             '<span class="badge badge-green">✓ Key saved</span>', unsafe_allow_html=True
         )
     elif st.session_state.api_key_set:
+        # Re-apply key on reruns so cache reattach/query keeps working.
+        if st.session_state.api_key_value:
+            os.environ["GOOGLE_API_KEY"] = st.session_state.api_key_value
+            os.environ["GEMINI_API_KEY"] = st.session_state.api_key_value
         st.markdown(
             '<span class="badge badge-blue">Key in session</span>',
             unsafe_allow_html=True,
@@ -608,6 +614,11 @@ def render_chat_history():
 # TAB 1 – CHAT
 # ════════════════════════════════════════════════════════════════════
 with tab_chat:
+    has_parsed_text = bool(list(CLEANED_DIR.glob("*.txt")))
+    chat_enabled = st.session_state.index_ready or has_parsed_text
+    if chat_enabled and not st.session_state.index_ready:
+        st.session_state.index_ready = True
+
     if not st.session_state.index_ready:
         st.markdown(
             """
@@ -657,13 +668,13 @@ with tab_chat:
             placeholder="e.g. Explain the three-way handshake in TCP…",
             label_visibility="collapsed",
             key="chat_input",
-            disabled=not st.session_state.index_ready,
+            disabled=not chat_enabled,
         )
     with col_btn:
         send = st.button(
             "Send →",
             use_container_width=True,
-            disabled=not st.session_state.index_ready,
+            disabled=not chat_enabled,
         )
 
     # ── handle submit ─────────────────────────────────────────────────────────
