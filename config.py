@@ -40,3 +40,7 @@ SIMILARITY_TOP_K  = 5
 
 # ── Follow-up Suggestions ─────────────────────────────────────────────────────
 NUM_FOLLOWUP_QUESTIONS = 3
+
+# ── Chat UI ───────────────────────────────────────────────────────────────────
+# Optional: set CHAT_INPUT_PLACEHOLDER in .env (leave unset for no placeholder text)
+CHAT_INPUT_PLACEHOLDER = (os.getenv("CHAT_INPUT_PLACEHOLDER") or "").strip()

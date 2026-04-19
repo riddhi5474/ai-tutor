@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 import importlib
 
-from config import EMBED_MODEL, GEMINI_MODEL
+from config import CHAT_INPUT_PLACEHOLDER, EMBED_MODEL, GEMINI_MODEL
 from storage import (
     append_message,
     clear_messages,
@@ -591,23 +591,87 @@ def render_chat_history():
             # sources
             src_html = _sources_html(msg.get("sources", [])) if show_sources else ""
 
-            # follow-ups (display-only pills; interactive buttons rendered below input)
+            # follow-ups are rendered as clickable buttons below the chat input
+            # to avoid duplicating them inside every AI message bubble.
             fu_html = ""
-            if show_followups and msg.get("followups"):
-                pills = "".join(
-                    f'<span class="fu-pill">💡 {q}</span>' for q in msg["followups"][:3]
-                )
-                fu_html = (
-                    '<div class="followup-section">'
-                    '<div class="followup-label">You might also ask</div>'
-                    f"{pills}</div>"
-                )
 
             st.markdown(
                 '<div class="msg-label" style="margin-left:6px;">🎓 AI Tutor</div>'
                 f'<div class="msg-ai">{msg["content"]}{src_html}{fu_html}</div>',
                 unsafe_allow_html=True,
             )
+
+
+def _process_chat_turn(q: str) -> None:
+    """Send user message, run tutor, append AI reply, rerun."""
+    prior_history = list(st.session_state.chat_history)
+    append_message(cid, "user", q)
+    st.session_state.chat_history.append(
+        {"role": "user", "content": q, "sources": [], "followups": []}
+    )
+
+    answer, sources, followups = "", [], []
+
+    if not query_notebooklm_style:
+        answer = (
+            "⚠️ Could not load chat modules. "
+            f"{_MODULE_LOAD_ERROR or 'Unknown error'}"
+        )
+    elif not st.session_state.tutor:
+        _ensure_tutor_loaded(CLEANED_DIR)
+        if st.session_state.tutor:
+            with st.spinner("Thinking…"):
+                try:
+                    result = query_notebooklm_style(
+                        q,
+                        st.session_state.tutor,
+                        conversation_history=prior_history,
+                        num_turns=3,
+                    )
+                    answer = result.get("answer", "")
+                    sources = result.get("sources", [])
+                    followups = result.get("follow_ups", [])
+                except Exception as e:
+                    answer = f"⚠️ Error: {e}"
+        else:
+            answer = (
+                "⚠️ Tutor is not loaded. Click **⚡ Build Index** again "
+                "(or wait for the embedding model to finish loading)."
+            )
+            if st.session_state.tutor_error:
+                answer += f"\n\nDetails: {st.session_state.tutor_error}"
+    else:
+        with st.spinner("Thinking…"):
+            try:
+                result = query_notebooklm_style(
+                    q,
+                    st.session_state.tutor,
+                    conversation_history=prior_history,
+                    num_turns=3,
+                )
+                answer = result.get("answer", "")
+                sources = result.get("sources", [])
+                followups = result.get("follow_ups", [])
+            except Exception as e:
+                answer = f"⚠️ Error: {e}"
+
+    append_message(cid, "ai", answer, sources=sources, followups=followups)
+    st.session_state.chat_history.append(
+        {
+            "role": "ai",
+            "content": answer,
+            "sources": sources,
+            "followups": followups,
+        }
+    )
+    # Clear input on the next run (must be done before the widget is instantiated).
+    st.session_state["_clear_chat_input"] = True
+    st.rerun()
+
+
+def _on_enter_send() -> None:
+    # Triggered by Enter in the text input.
+    st.session_state["_submit_chat"] = True
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -654,93 +718,45 @@ with tab_chat:
             fu_cols = st.columns(min(len(last_ai["followups"][:3]), 3))
             for i, fq in enumerate(last_ai["followups"][:3]):
                 with fu_cols[i]:
-                    if st.button(f"💡 {fq}", key=f"fu_{i}", use_container_width=True):
-                        st.session_state["_pending_q"] = fq
+                    if st.button(
+                        f"💡 {fq}",
+                        key=f"fu_{cid}_{i}",
+                        use_container_width=True,
+                    ):
+                        st.session_state["_instant_followup_q"] = fq
 
-    # ── input row ─────────────────────────────────────────────────────────────
+    # One-click follow-up: must run after buttons (same script run as the click)
+    instant_q = st.session_state.pop("_instant_followup_q", None)
+    if (
+        chat_enabled
+        and instant_q
+        and isinstance(instant_q, str)
+        and instant_q.strip()
+    ):
+        _process_chat_turn(instant_q.strip())
+
+    # ── input row (Enter or Send button) ──────────────────────────────────────
+    _ph = CHAT_INPUT_PLACEHOLDER if CHAT_INPUT_PLACEHOLDER else None
     col_in, col_btn = st.columns([5, 1])
     with col_in:
-        # if a follow-up button was clicked, pre-fill the input
-        pending = st.session_state.pop("_pending_q", "")
+        if st.session_state.pop("_clear_chat_input", False):
+            st.session_state["chat_input"] = ""
         user_q = st.text_input(
             "question",
-            value=pending,
-            placeholder="e.g. Explain the three-way handshake in TCP…",
+            placeholder=_ph,
             label_visibility="collapsed",
             key="chat_input",
             disabled=not chat_enabled,
+            on_change=_on_enter_send,
         )
     with col_btn:
-        send = st.button(
-            "Send →",
-            use_container_width=True,
-            disabled=not chat_enabled,
-        )
+        send = st.button("Send →", use_container_width=True, disabled=not chat_enabled)
 
-    # ── handle submit ─────────────────────────────────────────────────────────
-    if send and user_q.strip():
-        q = user_q.strip()
-        prior_history = list(st.session_state.chat_history)
-        append_message(cid, "user", q)
-        st.session_state.chat_history.append(
-            {"role": "user", "content": q, "sources": [], "followups": []}
-        )
-
-        answer, sources, followups = "", [], []
-
-        if not query_notebooklm_style:
-            answer = (
-                "⚠️ Could not load chat modules. "
-                f"{_MODULE_LOAD_ERROR or 'Unknown error'}"
-            )
-        elif not st.session_state.tutor:
-            _ensure_tutor_loaded(CLEANED_DIR)
-            if st.session_state.tutor:
-                with st.spinner("Thinking…"):
-                    try:
-                        result = query_notebooklm_style(
-                            q,
-                            st.session_state.tutor,
-                            conversation_history=prior_history,
-                            num_turns=3,
-                        )
-                        answer = result.get("answer", "")
-                        sources = result.get("sources", [])
-                        followups = result.get("follow_ups", [])
-                    except Exception as e:
-                        answer = f"⚠️ Error: {e}"
-            else:
-                answer = (
-                    "⚠️ Tutor is not loaded. Click **⚡ Build Index** again "
-                    "(or wait for the embedding model to finish loading)."
-                )
-                if st.session_state.tutor_error:
-                    answer += f"\n\nDetails: {st.session_state.tutor_error}"
-        else:
-            with st.spinner("Thinking…"):
-                try:
-                    result = query_notebooklm_style(
-                        q,
-                        st.session_state.tutor,
-                        conversation_history=prior_history,
-                        num_turns=3,
-                    )
-                    answer = result.get("answer", "")
-                    sources = result.get("sources", [])
-                    followups = result.get("follow_ups", [])
-                except Exception as e:
-                    answer = f"⚠️ Error: {e}"
-
-        append_message(cid, "ai", answer, sources=sources, followups=followups)
-        st.session_state.chat_history.append(
-            {
-                "role": "ai",
-                "content": answer,
-                "sources": sources,
-                "followups": followups,
-            }
-        )
-        st.rerun()
+    should_submit = send or st.session_state.pop("_submit_chat", False)
+    if should_submit:
+        q = (st.session_state.get("chat_input") or "").strip()
+        if q:
+            _process_chat_turn(q)
 
 
 # ════════════════════════════════════════════════════════════════════
