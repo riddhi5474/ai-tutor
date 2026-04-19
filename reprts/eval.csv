@@ -1,0 +1,2 @@
+conversation_id,title,turns_total,turns_user,turns_ai,source_coverage,avg_sources_per_ai,avg_top1_retrieval_score,distinct_source_files,followup_coverage,avg_followups_per_ai,faithfulness_score,answer_relevancy_mean,proxy_overall_score,labels_matched_ai_messages,correctness_mean,csat_mean
+5410079eccec4b668497f83825b93fd0,Chat 1,48,26,22,0.6818181818181818,3.409090909090909,0.7166003964477293,1,0.6818181818181818,2.0454545454545454,0.8090909090909091,0.11000017529804725,69.61363636363636,,,

@@ -1,113 +1,135 @@
-# 🎓 AI Tutor – NotebookLM Style
+# AI Tutor (NotebookLM-style)
 
-A modular, local RAG-based AI tutor built with **Gemini** + **LlamaIndex**.
+A modular, local RAG-based AI tutor using **Google Gemini** and **LlamaIndex**. You can use a **Streamlit chat UI** with saved conversations or a **CLI** session over the same course index.
 
 ---
 
-## 📁 Project Structure
+## Project structure
 
 ```
-ai_tutor/
+.
+├── app.py                 # Streamlit web UI (chat, uploads, study guide / FAQ)
+├── main.py                # CLI entry: parse materials → build index → REPL
+├── evaluation.py          # Optional metrics export from SQLite (JSON/CSV)
+├── config.py              # Models, paths, chunking, env loading
 │
-├── main.py                  # ← Entry point (run this)
-├── config.py                # ← All settings: models, paths, chunking
+├── core/                  # RAG engine
+│   ├── parser.py          # PDF & PPTX → cleaned text
+│   └── tutor.py           # Vector index + query
 │
-├── core/                    # RAG engine
-│   ├── parser.py            #   PDF & PPTX → clean text
-│   └── tutor.py             #   LlamaIndex vector index + query
+├── features/              # Tutor features (guides, FAQ, follow-ups, query)
+├── storage/               # SQLite + per-conversation file storage
+├── utils/                 # CLI session, export helpers
 │
-├── features/                # NotebookLM-style features
-│   ├── followup.py          #   Suggest follow-up questions
-│   ├── study_guide.py       #   Generate structured study guide
-│   ├── faq.py               #   Generate FAQ document
-│   └── query.py             #   Full query: answer + sources + followups
-│
-├── utils/                   # CLI & I/O helpers
-│   ├── session.py           #   Interactive terminal session
-│   └── exporter.py          #   Save outputs to output/
-│
-├── course_materials/        # ← Drop your PDFs & PPTX files here
-├── cleaned_text/            #   Auto-generated parsed text (git-ignored)
-├── output/                  #   Saved guides, FAQs, quizzes (git-ignored)
+├── course_materials/      # Put PDFs and PPTX here
+├── cleaned_text/            # Parsed text (gitignored)
+├── output/                  # Exported guides, FAQs, etc. (gitignored)
+├── data/                    # Local app DB + uploads (see .gitignore)
+│   ├── ai_tutor.db
+│   └── storage/             # Per-conversation uploads (gitignored)
 │
 ├── requirements.txt
-├── .env.example
 └── .gitignore
 ```
 
 ---
 
-## ⚡ Quick Start
+## Quick start
 
-### 1. Open the folder in VS Code
+### 1. Virtual environment
 
-### 2. Create and activate a virtual environment
 ```bash
 python -m venv venv
-source venv/bin/activate      # Mac/Linux
-venv\Scripts\activate         # Windows
+source venv/bin/activate       # macOS / Linux
+venv\Scripts\activate          # Windows
 ```
 
-### 3. Install dependencies
+### 2. Dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-> **System dependencies** (only needed for OCR on scanned PDFs):
-> - macOS: `brew install poppler tesseract`
-> - Windows: [Poppler](https://github.com/oschwartz10612/poppler-windows) · [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki)
+**System dependencies** (only for OCR on scanned PDFs):
 
-### 4. Set your API key
-```bash
-cp .env.example .env
-# Edit .env — paste your Gemini API key
+- macOS: `brew install poppler tesseract`
+- Windows: [Poppler](https://github.com/oschwartz10612/poppler-windows) · [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki)
+
+### 3. API key
+
+Create a `.env` file in the project root:
+
+```env
+GEMINI_API_KEY=your_key_here
 ```
-Get a free key at: https://aistudio.google.com/app/apikey
 
-### 5. Add your course materials
+`config.py` also accepts `GOOGLE_API_KEY` if you prefer that name.  
+Get a key: https://aistudio.google.com/app/apikey
+
+### 4. Add materials
+
 Drop **PDF** or **PPTX** files into `course_materials/`.
 
-### 6. Run
+### 5. Run the app
+
+**Web UI (recommended):** from the project root,
+
+```bash
+streamlit run app.py
+```
+
+**CLI:** parses `course_materials/`, builds the index, then starts the interactive session:
+
 ```bash
 python main.py
-```
-for streamlit
-```bash
-python -m streamlit run app.py
 ```
 
 ---
 
-## 💬 Interactive Commands
+## CLI commands
 
-| Command | What it does |
-|---|---|
-| `[your question]` | Ask anything from your materials |
-| `guide [topic]` | Generate a full study guide |
-| `quiz [topic]` | Generate a 5-question quiz |
-| `faq [topic]` | Generate an FAQ document |
-| `history` | View conversation history |
+| Input | Action |
+|--------|--------|
+| Your question | Answer from indexed materials |
+| `guide [topic]` | Study guide |
+| `quiz [topic]` | Short quiz |
+| `faq [topic]` | FAQ-style document |
+| `history` | Conversation history |
 | `quit` | Exit |
 
 ---
 
-## 🔧 Customisation
+## Configuration
 
-All tunable settings live in **`config.py`**:
+Tunable values live in **`config.py`**:
 
-| Setting | Default | What it controls |
-|---|---|---|
-| `GEMINI_MODEL` | `gemini-2.5-flash` | LLM used for answers |
-| `EMBED_MODEL` | `BAAI/bge-small-en-v1.5` | Embedding model |
-| `CHUNK_SIZE` | `512` | Token chunk size for splitting |
-| `CHUNK_OVERLAP` | `50` | Overlap between chunks |
-| `SIMILARITY_TOP_K` | `5` | Source chunks retrieved per query |
-| `NUM_FOLLOWUP_QUESTIONS` | `3` | Follow-up questions suggested |
+| Setting | Default | Role |
+|---------|---------|------|
+| `GEMINI_MODEL` | `models/gemini-2.5-flash` | Generative model |
+| `EMBED_MODEL` | `BAAI/bge-small-en-v1.5` | Embeddings |
+| `CHUNK_SIZE` | `512` | Chunk size for splitting |
+| `CHUNK_OVERLAP` | `50` | Chunk overlap |
+| `SIMILARITY_TOP_K` | `5` | Chunks retrieved per query |
+| `NUM_FOLLOWUP_QUESTIONS` | `3` | Suggested follow-ups |
+
+Optional: set `CHAT_INPUT_PLACEHOLDER` in `.env` for custom Streamlit input hint text.
 
 ---
 
-## ➕ Extending the Project
+## Evaluation (optional)
 
-- **New feature?** Add a file in `features/` and export it from `features/__init__.py`
-- **New command?** Add a branch in `utils/session.py`
-- **Save output automatically?** Use `utils/exporter.save_to_file(content, topic)`
+`evaluation.py` reads the Streamlit/CLI conversation database and can emit aggregate metrics (for example grounding-style proxies from stored sources). Example:
+
+```bash
+python evaluation.py --db data/ai_tutor.db --out-csv reports/eval.csv
+```
+
+Use `--help` for JSON export, label files, and other options.
+
+---
+
+## Extending the project
+
+- **New feature:** add a module under `features/` and wire it from `features/__init__.py` or `app.py` as needed.
+- **New CLI command:** extend `utils/session.py`.
+- **Save generated text to disk:** use `utils/exporter.save_to_file(content, topic)` (or the paths under `output/` from `config.py`).

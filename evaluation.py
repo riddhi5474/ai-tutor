@@ -6,6 +6,8 @@ Evaluation utilities for the AI Tutor conversation agent (tutoring + RAG).
 This script is intentionally dependency-free (stdlib only) and focuses on:
 - RAG grounding / citation proxy metrics from `messages.sources_json`
 - Conversation quality proxies (turn counts, followups)
+- Study guide + FAQ: same-style proxies from `conversations.study_guide` / `faq` and
+  optional persisted `*_sources_json` (written when generating from the Streamlit app)
 - Optional human labels for correctness + user satisfaction (CSAT/helpfulness)
 
 Usage examples:
@@ -20,6 +22,13 @@ Labels format (JSONL, one object per line), any of:
 Where:
   correctness ∈ {0, 0.5, 1} (fail/partial/success) or any float in [0,1]
   csat ∈ [1..5]
+
+Optional per-conversation artifact satisfaction:
+
+- **In app:** use “Save rating” under Study Guide / FAQ (stored as ``study_guide_csat`` /
+  ``faq_csat`` on the conversation row).
+- **JSONL** (optional; overrides DB if both are set):  
+  ``{"conversation_id":"<id>", "study_guide_csat":4, "faq_csat":5}``
 """
 
 from __future__ import annotations
@@ -28,11 +37,14 @@ import argparse
 import csv
 import json
 import math
+import re
 import sqlite3
 import statistics
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+from storage.store import migrate_db_schema
 
 
 @dataclass(frozen=True)
@@ -67,6 +79,32 @@ def _median(xs: List[float]) -> Optional[float]:
 
 def _pct(n: int, d: int) -> float:
     return float(n) / float(d) if d else 0.0
+
+
+def _tokenize(s: str) -> List[str]:
+    # Very lightweight tokenizer: alnum "words", lowercase.
+    out: List[str] = []
+    buf: List[str] = []
+    for ch in (s or "").lower():
+        if ch.isalnum():
+            buf.append(ch)
+        else:
+            if buf:
+                out.append("".join(buf))
+                buf = []
+    if buf:
+        out.append("".join(buf))
+    return out
+
+
+def _jaccard(a: Iterable[str], b: Iterable[str]) -> float:
+    sa = set(a)
+    sb = set(b)
+    if not sa and not sb:
+        return 0.0
+    inter = len(sa & sb)
+    union = len(sa | sb)
+    return float(inter) / float(union) if union else 0.0
 
 
 def _open_db(db_path: Path) -> sqlite3.Connection:
@@ -115,7 +153,9 @@ def load_messages(conn: sqlite3.Connection, conversation_id: Optional[str] = Non
 def load_conversations(conn: sqlite3.Connection) -> List[dict]:
     rows = conn.execute(
         """
-        SELECT id, title, created_at, updated_at, embedding_model, llm_model
+        SELECT id, title, created_at, updated_at, embedding_model, llm_model,
+               study_guide, faq, study_guide_sources_json, faq_sources_json,
+               study_guide_csat, faq_csat
         FROM conversations
         ORDER BY updated_at DESC
         """
@@ -145,6 +185,106 @@ def _extract_source_filenames(sources: List[dict]) -> List[str]:
             if fn:
                 names.append(fn)
     return names
+
+
+def _rag_stats_single_block(sources: List[dict]) -> dict:
+    """Retrieval / source hygiene for one generated artifact (study guide or FAQ)."""
+    sources = sources or []
+    scores = _extract_source_scores(sources)
+    fns = _extract_source_filenames(sources)
+    distinct: set[str] = set()
+    unknown_hits = 0
+    for fn in fns:
+        distinct.add(fn)
+        if fn.lower() in {"unknown", "source"}:
+            unknown_hits += 1
+    n = len(sources)
+    cov = 1.0 if n > 0 else 0.0
+    return {
+        "source_count": n,
+        "source_coverage": cov,
+        "avg_top1_retrieval_score": max(scores) if scores else None,
+        "avg_mean_retrieval_score": (_mean(scores) if scores else None),
+        "distinct_source_files": len(distinct),
+        "unknown_source_file_hits": unknown_hits,
+    }
+
+
+def _faithfulness_single_block(source_count: int, source_coverage: float, unknown_hits: int) -> float:
+    """Same weighting idea as chat faithfulness, for a single RAG generation."""
+    faith = (
+        0.60 * source_coverage
+        + 0.25 * min(1.0, float(source_count) / 3.0)
+        + 0.15 * (1.0 - min(1.0, float(unknown_hits) / 1.0))
+    )
+    return max(0.0, min(1.0, faith))
+
+
+def score_generated_artifact(
+    text: Optional[str],
+    sources: List[dict],
+    user_turn_contents: List[str],
+    *,
+    kind: str,
+) -> Optional[dict]:
+    """
+    Metrics for saved study guide or FAQ text.
+
+    - faithfulness_score: grounding / citation proxy from persisted source nodes
+    - answer_relevancy: Jaccard overlap between all user chat text and the artifact
+    - user_satisfaction_csat: optional; supplied via labels (see module docstring)
+    """
+    body = (text or "").strip()
+    if not body:
+        return None
+
+    rag = _rag_stats_single_block(sources)
+    faithfulness = _faithfulness_single_block(
+        rag["source_count"], rag["source_coverage"], rag["unknown_source_file_hits"]
+    )
+
+    user_blob = " ".join(user_turn_contents)
+    relevancy: Optional[float] = None
+    if user_blob.strip():
+        relevancy = _jaccard(_tokenize(user_blob), _tokenize(body))
+
+    out: Dict[str, Any] = {
+        "kind": kind,
+        "char_count": len(body),
+        "word_count": len(_tokenize(body)),
+        "rag": rag,
+        "faithfulness_score": faithfulness,
+        "answer_relevancy": relevancy,
+    }
+
+    if kind == "study_guide":
+        lines = body.splitlines()
+        out["markdown_h2_sections"] = sum(1 for line in lines if line.strip().startswith("##"))
+        out["bullet_lines"] = sum(
+            1 for line in lines if line.strip().startswith(("-", "*", "•"))
+        )
+    elif kind == "faq":
+        out["faq_question_markers"] = len(re.findall(r"(?im)^\s*Q\s*:", body))
+        out["faq_answer_markers"] = len(re.findall(r"(?im)^\s*A\s*:", body))
+
+    return out
+
+
+def _pair_user_ai_turns(messages: List[Message]) -> List[Tuple[Message, Message]]:
+    """
+    Pairs each user message with the next AI message (in time order).
+    This is used for Answer Relevancy proxies.
+    """
+    pairs: List[Tuple[Message, Message]] = []
+    pending_user: Optional[Message] = None
+    for m in messages:
+        if m.role == "user":
+            pending_user = m
+        elif m.role == "ai":
+            if pending_user is not None:
+                pairs.append((pending_user, m))
+                pending_user = None
+    return pairs
 
 
 def score_conversation(messages: List[Message]) -> dict:
@@ -191,6 +331,20 @@ def score_conversation(messages: List[Message]) -> dict:
         "unknown_source_file_hits": unknown_file_hits,
     }
 
+    # Answer relevancy proxy: token overlap between each user prompt and the next AI answer.
+    pairs = _pair_user_ai_turns(messages)
+    relevancies: List[float] = []
+    for u, a in pairs:
+        relevancies.append(_jaccard(_tokenize(u.content), _tokenize(a.content)))
+
+    # Faithfulness proxy (0..1): emphasizes having sources, multiple sources, and not "unknown" files.
+    # Note: this is NOT a semantic faithfulness check; it is a grounding/citation hygiene proxy.
+    faithfulness = (
+        0.60 * rag["source_coverage"]
+        + 0.25 * min(1.0, (rag["avg_sources_per_ai"] or 0.0) / 3.0)
+        + 0.15 * (1.0 - min(1.0, float(rag["unknown_source_file_hits"] or 0) / max(1.0, float(len(ai_turns) or 0))))
+    )
+
     convo = {
         "turns_total": len(messages),
         "turns_user": len(user_turns),
@@ -201,6 +355,8 @@ def score_conversation(messages: List[Message]) -> dict:
         "ai_with_followups": len(ai_with_followups),
         "followup_coverage": _pct(len(ai_with_followups), len(ai_turns)),
         "avg_followups_per_ai": _mean([float(len(m.followups or [])) for m in ai_turns]),
+        "answer_relevancy_mean": _mean(relevancies),
+        "faithfulness_score": max(0.0, min(1.0, faithfulness)),
     }
 
     # Simple overall score (0..100) based on correctness/user satisfaction being optional.
@@ -289,12 +445,54 @@ def attach_labels(
     }
 
 
+def _parse_csat_1_5(raw: Any) -> Optional[float]:
+    if raw is None:
+        return None
+    try:
+        v = float(raw)
+        if not math.isfinite(v):
+            return None
+        return max(1.0, min(5.0, v))
+    except Exception:
+        return None
+
+
+def attach_artifact_labels(conv_id: str, labels: List[dict]) -> Dict[str, float]:
+    """Optional CSAT for saved study guide / FAQ (last matching row wins)."""
+    sg: Optional[float] = None
+    fq: Optional[float] = None
+    for it in labels:
+        if str(it.get("conversation_id", "")) != conv_id:
+            continue
+        if "study_guide_csat" in it:
+            try:
+                v = float(it["study_guide_csat"])
+                if math.isfinite(v):
+                    sg = max(1.0, min(5.0, v))
+            except Exception:
+                pass
+        if "faq_csat" in it:
+            try:
+                v = float(it["faq_csat"])
+                if math.isfinite(v):
+                    fq = max(1.0, min(5.0, v))
+            except Exception:
+                pass
+    out: Dict[str, float] = {}
+    if sg is not None:
+        out["study_guide_csat"] = sg
+    if fq is not None:
+        out["faq_csat"] = fq
+    return out
+
+
 def evaluate(
     db_path: Path,
     labels_path: Optional[Path] = None,
     conversation_id: Optional[str] = None,
 ) -> dict:
     with _open_db(db_path) as conn:
+        migrate_db_schema(conn)
         conv_rows = load_conversations(conn)
         messages = load_messages(conn, conversation_id=conversation_id)
 
@@ -306,12 +504,47 @@ def evaluate(
     for m in messages:
         by_conv.setdefault(m.conversation_id, []).append(m)
 
+    if conversation_id:
+        if conversation_id in conv_meta_by_id or conversation_id in by_conv:
+            conv_ids = [conversation_id]
+        else:
+            conv_ids = []
+    else:
+        conv_ids = sorted(set(conv_meta_by_id) | set(by_conv))
+
     conv_reports: List[dict] = []
-    for cid, msgs in by_conv.items():
+    for cid in conv_ids:
+        msgs = by_conv.get(cid, [])
         base = score_conversation(msgs)
         meta = conv_meta_by_id.get(cid, {"id": cid, "title": "Unknown"})
         ai_turns = [m for m in msgs if m.role == "ai"]
         label_stats = attach_labels(cid, ai_turns, labels) if labels else None
+
+        user_texts = [m.content for m in msgs if m.role == "user"]
+        sg_sources = _safe_json_loads(meta.get("study_guide_sources_json"), default=[])
+        if not isinstance(sg_sources, list):
+            sg_sources = []
+        fq_sources = _safe_json_loads(meta.get("faq_sources_json"), default=[])
+        if not isinstance(fq_sources, list):
+            fq_sources = []
+
+        study_guide_metrics = score_generated_artifact(
+            meta.get("study_guide"), sg_sources, user_texts, kind="study_guide"
+        )
+        faq_metrics = score_generated_artifact(meta.get("faq"), fq_sources, user_texts, kind="faq")
+
+        art_lab = attach_artifact_labels(cid, labels) if labels else {}
+        sg_csat = _parse_csat_1_5(meta.get("study_guide_csat"))
+        if "study_guide_csat" in art_lab:
+            sg_csat = art_lab["study_guide_csat"]
+        faq_csat = _parse_csat_1_5(meta.get("faq_csat"))
+        if "faq_csat" in art_lab:
+            faq_csat = art_lab["faq_csat"]
+        if study_guide_metrics is not None and sg_csat is not None:
+            study_guide_metrics = {**study_guide_metrics, "user_satisfaction_csat": sg_csat}
+        if faq_metrics is not None and faq_csat is not None:
+            faq_metrics = {**faq_metrics, "user_satisfaction_csat": faq_csat}
+
         conv_reports.append(
             {
                 "conversation_id": cid,
@@ -321,6 +554,8 @@ def evaluate(
                 "embedding_model": meta.get("embedding_model"),
                 "llm_model": meta.get("llm_model"),
                 **base,
+                "study_guide": study_guide_metrics,
+                "faq": faq_metrics,
                 **({"labels": label_stats} if label_stats is not None else {}),
             }
         )
@@ -328,13 +563,58 @@ def evaluate(
     # overall aggregates
     all_source_coverage = [c["rag"]["source_coverage"] for c in conv_reports]
     all_followup_coverage = [c["conversation"]["followup_coverage"] for c in conv_reports]
+    all_answer_relevancy = [c["conversation"].get("answer_relevancy_mean") for c in conv_reports]
+    all_faithfulness = [c["conversation"].get("faithfulness_score") for c in conv_reports]
     all_proxy = [c["proxy_overall_score"] for c in conv_reports]
+
+    def _artifact_vals(key: str) -> List[float]:
+        xs: List[float] = []
+        for c in conv_reports:
+            block = c.get(key)
+            if not isinstance(block, dict):
+                continue
+            v = block.get("faithfulness_score")
+            if v is not None:
+                xs.append(float(v))
+        return xs
+
+    def _artifact_relevancy(key: str) -> List[float]:
+        xs: List[float] = []
+        for c in conv_reports:
+            block = c.get(key)
+            if not isinstance(block, dict):
+                continue
+            v = block.get("answer_relevancy")
+            if v is not None:
+                xs.append(float(v))
+        return xs
+
+    def _artifact_csat(key: str) -> List[float]:
+        xs: List[float] = []
+        for c in conv_reports:
+            block = c.get(key)
+            if not isinstance(block, dict):
+                continue
+            v = block.get("user_satisfaction_csat")
+            if v is not None:
+                xs.append(float(v))
+        return xs
 
     overall: Dict[str, Any] = {
         "conversations": len(conv_reports),
         "avg_source_coverage": _mean(all_source_coverage),
         "avg_followup_coverage": _mean(all_followup_coverage),
+        "avg_answer_relevancy": _mean([float(x) for x in all_answer_relevancy if x is not None]),
+        "avg_faithfulness_score": _mean([float(x) for x in all_faithfulness if x is not None]),
         "avg_proxy_overall_score": _mean(all_proxy),
+        "study_guide_conversations": sum(1 for c in conv_reports if c.get("study_guide")),
+        "avg_study_guide_faithfulness": _mean(_artifact_vals("study_guide")),
+        "avg_study_guide_answer_relevancy": _mean(_artifact_relevancy("study_guide")),
+        "avg_study_guide_user_satisfaction_csat": _mean(_artifact_csat("study_guide")),
+        "faq_conversations": sum(1 for c in conv_reports if c.get("faq")),
+        "avg_faq_faithfulness": _mean(_artifact_vals("faq")),
+        "avg_faq_answer_relevancy": _mean(_artifact_relevancy("faq")),
+        "avg_faq_user_satisfaction_csat": _mean(_artifact_csat("faq")),
     }
 
     if labels:
@@ -381,6 +661,16 @@ def _write_csv(path: Path, conv_reports: List[dict]) -> None:
         "distinct_source_files",
         "followup_coverage",
         "avg_followups_per_ai",
+        "faithfulness_score",
+        "answer_relevancy_mean",
+        "study_guide_faithfulness",
+        "study_guide_answer_relevancy",
+        "study_guide_user_satisfaction_csat",
+        "study_guide_word_count",
+        "faq_faithfulness",
+        "faq_answer_relevancy",
+        "faq_user_satisfaction_csat",
+        "faq_word_count",
         "proxy_overall_score",
         "labels_matched_ai_messages",
         "correctness_mean",
@@ -391,6 +681,8 @@ def _write_csv(path: Path, conv_reports: List[dict]) -> None:
         w.writeheader()
         for c in conv_reports:
             labels = c.get("labels") or {}
+            sg = c.get("study_guide") if isinstance(c.get("study_guide"), dict) else {}
+            fq = c.get("faq") if isinstance(c.get("faq"), dict) else {}
             w.writerow(
                 {
                     "conversation_id": c.get("conversation_id"),
@@ -404,6 +696,16 @@ def _write_csv(path: Path, conv_reports: List[dict]) -> None:
                     "distinct_source_files": c.get("rag", {}).get("distinct_source_files"),
                     "followup_coverage": c.get("conversation", {}).get("followup_coverage"),
                     "avg_followups_per_ai": c.get("conversation", {}).get("avg_followups_per_ai"),
+                    "faithfulness_score": c.get("conversation", {}).get("faithfulness_score"),
+                    "answer_relevancy_mean": c.get("conversation", {}).get("answer_relevancy_mean"),
+                    "study_guide_faithfulness": sg.get("faithfulness_score"),
+                    "study_guide_answer_relevancy": sg.get("answer_relevancy"),
+                    "study_guide_user_satisfaction_csat": sg.get("user_satisfaction_csat"),
+                    "study_guide_word_count": sg.get("word_count"),
+                    "faq_faithfulness": fq.get("faithfulness_score"),
+                    "faq_answer_relevancy": fq.get("answer_relevancy"),
+                    "faq_user_satisfaction_csat": fq.get("user_satisfaction_csat"),
+                    "faq_word_count": fq.get("word_count"),
                     "proxy_overall_score": c.get("proxy_overall_score"),
                     "labels_matched_ai_messages": labels.get("labels_matched_ai_messages"),
                     "correctness_mean": labels.get("correctness_mean"),
@@ -440,11 +742,51 @@ def main() -> int:
     print(f"Conversations: {overall.get('conversations', 0)}")
     print(f"Avg source coverage: {overall.get('avg_source_coverage'):.3f}" if overall.get("avg_source_coverage") is not None else "Avg source coverage: n/a")
     print(f"Avg follow-up coverage: {overall.get('avg_followup_coverage'):.3f}" if overall.get("avg_followup_coverage") is not None else "Avg follow-up coverage: n/a")
+    print(f"Avg faithfulness score: {overall.get('avg_faithfulness_score'):.3f}" if overall.get("avg_faithfulness_score") is not None else "Avg faithfulness score: n/a")
+    print(f"Avg answer relevancy: {overall.get('avg_answer_relevancy'):.3f}" if overall.get("avg_answer_relevancy") is not None else "Avg answer relevancy: n/a")
     print(f"Avg proxy overall score: {overall.get('avg_proxy_overall_score'):.1f}" if overall.get("avg_proxy_overall_score") is not None else "Avg proxy overall score: n/a")
+
+    n_sg = overall.get("study_guide_conversations", 0)
+    n_fq = overall.get("faq_conversations", 0)
+    print(f"\nStudy guides present: {n_sg}")
+    if n_sg:
+        print(
+            f"  Avg faithfulness: {overall.get('avg_study_guide_faithfulness'):.3f}"
+            if overall.get("avg_study_guide_faithfulness") is not None
+            else "  Avg faithfulness: n/a"
+        )
+        print(
+            f"  Avg answer relevancy (vs chat): {overall.get('avg_study_guide_answer_relevancy'):.3f}"
+            if overall.get("avg_study_guide_answer_relevancy") is not None
+            else "  Avg answer relevancy (vs chat): n/a"
+        )
+        print(
+            f"  Avg user satisfaction (CSAT): {overall.get('avg_study_guide_user_satisfaction_csat'):.3f}"
+            if overall.get("avg_study_guide_user_satisfaction_csat") is not None
+            else "  Avg user satisfaction (CSAT): n/a (save rating in app under Study Guide, or add study_guide_csat in labels JSONL)"
+        )
+    print(f"\nFAQs present: {n_fq}")
+    if n_fq:
+        print(
+            f"  Avg faithfulness: {overall.get('avg_faq_faithfulness'):.3f}"
+            if overall.get("avg_faq_faithfulness") is not None
+            else "  Avg faithfulness: n/a"
+        )
+        print(
+            f"  Avg answer relevancy (vs chat): {overall.get('avg_faq_answer_relevancy'):.3f}"
+            if overall.get("avg_faq_answer_relevancy") is not None
+            else "  Avg answer relevancy (vs chat): n/a"
+        )
+        print(
+            f"  Avg user satisfaction (CSAT): {overall.get('avg_faq_user_satisfaction_csat'):.3f}"
+            if overall.get("avg_faq_user_satisfaction_csat") is not None
+            else "  Avg user satisfaction (CSAT): n/a (save rating in app under FAQ, or add faq_csat in labels JSONL)"
+        )
+
     if "avg_correctness_mean" in overall:
         print(f"Labeled conversations: {overall.get('labeled_conversations', 0)}")
         print(f"Avg correctness mean: {overall.get('avg_correctness_mean'):.3f}" if overall.get("avg_correctness_mean") is not None else "Avg correctness mean: n/a")
-        print(f"Avg CSAT mean: {overall.get('avg_csat_mean'):.3f}" if overall.get("avg_csat_mean") is not None else "Avg CSAT mean: n/a")
+        print(f"Avg user satisfaction (CSAT): {overall.get('avg_csat_mean'):.3f}" if overall.get("avg_csat_mean") is not None else "Avg user satisfaction (CSAT): n/a")
 
     if args.out_json:
         _write_json(Path(args.out_json), report)

@@ -27,6 +27,20 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+def migrate_db_schema(conn: sqlite3.Connection) -> None:
+    """Add columns introduced after first release (safe to call repeatedly)."""
+    rows = conn.execute("PRAGMA table_info(conversations)").fetchall()
+    names = {str(r[1]) for r in rows}
+    for col, decl in (
+        ("study_guide_sources_json", "TEXT"),
+        ("faq_sources_json", "TEXT"),
+        ("study_guide_csat", "REAL"),
+        ("faq_csat", "REAL"),
+    ):
+        if col not in names:
+            conn.execute(f"ALTER TABLE conversations ADD COLUMN {col} {decl}")
+
+
 def init_db() -> None:
     with get_connection() as conn:
         conn.executescript(
@@ -71,6 +85,7 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
             """
         )
+        migrate_db_schema(conn)
 
 
 def conversation_paths(conversation_id: str) -> tuple[Path, Path]:
@@ -141,6 +156,10 @@ def update_conversation_extras(
     title: Optional[str] = None,
     study_guide: Optional[str] = None,
     faq: Optional[str] = None,
+    study_guide_sources_json: Optional[str] = None,
+    faq_sources_json: Optional[str] = None,
+    study_guide_csat: Optional[float] = None,
+    faq_csat: Optional[float] = None,
     embedding_model: Optional[str] = None,
     llm_model: Optional[str] = None,
 ) -> None:
@@ -155,6 +174,18 @@ def update_conversation_extras(
     if faq is not None:
         parts.append("faq = ?")
         vals.append(faq)
+    if study_guide_sources_json is not None:
+        parts.append("study_guide_sources_json = ?")
+        vals.append(study_guide_sources_json)
+    if faq_sources_json is not None:
+        parts.append("faq_sources_json = ?")
+        vals.append(faq_sources_json)
+    if study_guide_csat is not None:
+        parts.append("study_guide_csat = ?")
+        vals.append(float(study_guide_csat))
+    if faq_csat is not None:
+        parts.append("faq_csat = ?")
+        vals.append(float(faq_csat))
     if embedding_model is not None:
         parts.append("embedding_model = ?")
         vals.append(embedding_model)

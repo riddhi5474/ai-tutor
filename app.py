@@ -4,6 +4,7 @@ Run: streamlit run app.py  (from inside ai_tutor/)
 """
 
 import streamlit as st
+import json
 import os
 import shutil
 import uuid
@@ -810,9 +811,18 @@ with tab_guide:
             with st.spinner(f"Generating study guide for '{topic}'…"):
                 try:
                     # ✅ Exact signature: generate_study_guide(topic, tutor)
-                    guide = generate_study_guide(topic, st.session_state.tutor)
+                    guide_out = generate_study_guide(topic, st.session_state.tutor)
+                    guide = guide_out["response"]
+                    sources_json = json.dumps(
+                        guide_out.get("source_nodes") or [],
+                        ensure_ascii=False,
+                    )
                     st.session_state.study_guide = guide
-                    update_conversation_extras(cid, study_guide=guide)
+                    update_conversation_extras(
+                        cid,
+                        study_guide=guide,
+                        study_guide_sources_json=sources_json,
+                    )
                     st.success("Study guide saved to this conversation.")
                 except Exception as e:
                     st.error(f"Error: {e}")
@@ -822,6 +832,30 @@ with tab_guide:
             f'<div class="output-box">{st.session_state.study_guide}</div>',
             unsafe_allow_html=True,
         )
+        _row_sg = get_conversation(cid) or {}
+        _cur_sg = _row_sg.get("study_guide_csat")
+        _def_sg = int(round(float(_cur_sg))) if _cur_sg is not None else 3
+        _sg_key = f"study_guide_csat_slider_{cid}_{_cur_sg!s}"
+        st.caption(
+            f"Saved rating in database: **{int(round(float(_cur_sg)))}/5**"
+            if _cur_sg is not None
+            else "No rating saved yet — set 1–5 and click **Save rating** (used by `evaluation.py`)."
+        )
+        c_sg_a, c_sg_b = st.columns([4, 1])
+        with c_sg_a:
+            _sg_rv = st.slider(
+                "Your rating: study guide (1–5)",
+                1,
+                5,
+                _def_sg,
+                key=_sg_key,
+            )
+        with c_sg_b:
+            st.write("")  # align button with slider
+            st.write("")
+            if st.button("Save rating", key=f"study_guide_csat_save_{cid}"):
+                update_conversation_extras(cid, study_guide_csat=float(_sg_rv))
+                st.rerun()
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -884,11 +918,20 @@ with tab_faq:
             with st.spinner(f"Generating {faq_n} FAQ questions for '{topic}'…"):
                 try:
                     # ✅ Exact signature: generate_faq(topic, tutor, num_questions)
-                    faq = generate_faq(
+                    faq_out = generate_faq(
                         topic, st.session_state.tutor, num_questions=faq_n
                     )
+                    faq = faq_out["response"]
+                    faq_sources_json = json.dumps(
+                        faq_out.get("source_nodes") or [],
+                        ensure_ascii=False,
+                    )
                     st.session_state.faq = faq
-                    update_conversation_extras(cid, faq=faq)
+                    update_conversation_extras(
+                        cid,
+                        faq=faq,
+                        faq_sources_json=faq_sources_json,
+                    )
                     st.success("FAQ saved to this conversation.")
                 except Exception as e:
                     st.error(f"Error: {e}")
@@ -898,3 +941,27 @@ with tab_faq:
             f'<div class="output-box">{st.session_state.faq}</div>',
             unsafe_allow_html=True,
         )
+        _row_fq = get_conversation(cid) or {}
+        _cur_fq = _row_fq.get("faq_csat")
+        _def_fq = int(round(float(_cur_fq))) if _cur_fq is not None else 3
+        _fq_key = f"faq_csat_slider_{cid}_{_cur_fq!s}"
+        st.caption(
+            f"Saved rating in database: **{int(round(float(_cur_fq)))}/5**"
+            if _cur_fq is not None
+            else "No rating saved yet — set 1–5 and click **Save rating** (used by `evaluation.py`)."
+        )
+        c_fq_a, c_fq_b = st.columns([4, 1])
+        with c_fq_a:
+            _fq_rv = st.slider(
+                "Your rating: FAQ (1–5)",
+                1,
+                5,
+                _def_fq,
+                key=_fq_key,
+            )
+        with c_fq_b:
+            st.write("")
+            st.write("")
+            if st.button("Save rating", key=f"faq_csat_save_{cid}"):
+                update_conversation_extras(cid, faq_csat=float(_fq_rv))
+                st.rerun()
