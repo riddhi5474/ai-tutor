@@ -5,6 +5,7 @@ Run: streamlit run app.py  (from inside ai_tutor/)
 
 import streamlit as st
 import os
+import re
 import shutil
 import uuid
 from pathlib import Path
@@ -236,10 +237,14 @@ _DEFAULTS = {
     # each entry: {"role":"user"|"ai", "content":str, "sources":list[dict], "followups":list[str]}
     "chat_history": [],
     "study_guide": "",
+    "study_guide_mermaid": "",
+    "study_guide_diagram": b"",
+    "study_guide_diagram_format": "svg",
     "faq": "",
     "api_key_set": False,
     "saved_files": [],
     "active_conversation_id": "",
+    "wolfram_app_id": "",
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -288,6 +293,17 @@ def _load_modules():
         from features.query import query_notebooklm_style
         from features.study_guide import generate_study_guide
         from features.faq import generate_faq
+        from core.llama_tools_router import run_llamaindex_tool_router
+        from tools import (
+            build_plot_figure,
+            convert_units,
+            generate_mermaid_diagram,
+            repair_mermaid_diagram,
+            run_computer_algebra,
+            render_mermaid_with_kroki,
+            wolfram_short_answer,
+            wikipedia_summary,
+        )
 
         _MODULE_LOAD_ERROR = None
         return (
@@ -296,13 +312,37 @@ def _load_modules():
             query_notebooklm_style,
             generate_study_guide,
             generate_faq,
+            run_llamaindex_tool_router,
+            run_computer_algebra,
+            build_plot_figure,
+            convert_units,
+            generate_mermaid_diagram,
+            repair_mermaid_diagram,
+            render_mermaid_with_kroki,
+            wolfram_short_answer,
+            wikipedia_summary,
         )
     except Exception as e:
         _MODULE_LOAD_ERROR = f"{type(e).__name__}: {e}"
-        return None, None, None, None, None
+        return (None,) * 14
 
 
-SimpleDocParser, AITutor, query_notebooklm_style, generate_study_guide, generate_faq = _load_modules()
+(
+    SimpleDocParser,
+    AITutor,
+    query_notebooklm_style,
+    generate_study_guide,
+    generate_faq,
+    run_llamaindex_tool_router,
+    run_computer_algebra,
+    build_plot_figure,
+    convert_units,
+    generate_mermaid_diagram,
+    repair_mermaid_diagram,
+    render_mermaid_with_kroki,
+    wolfram_short_answer,
+    wikipedia_summary,
+) = _load_modules()
 
 
 def _cleaned_corpus_fingerprint(cleaned_dir: Path) -> str:
@@ -344,6 +384,52 @@ def _attach_tutor_from_cache(cleaned_dir: Path) -> None:
 
 
 _attach_tutor_from_cache(CLEANED_DIR)
+
+
+def _general_chat_response(question: str) -> str:
+    """
+    Fallback chat when no vector index is available.
+    Uses Gemini directly without retrieval.
+    """
+    import google.generativeai as genai
+
+    api_key = os.getenv("GOOGLE_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("Gemini API key is missing.")
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(GEMINI_MODEL)
+    resp = model.generate_content(
+        f"You are a helpful tutor. Answer clearly and concisely.\n\nQuestion: {question}"
+    )
+    return (getattr(resp, "text", "") or "").strip() or "No response."
+
+
+def _parse_plot_request(question: str) -> dict | None:
+    q = (question or "").strip()
+    ql = q.lower()
+    if not any(k in ql for k in ("plot", "graph", "draw")):
+        return None
+
+    expr = None
+    m = re.search(r"(?:plot|graph|draw)\s+(.+?)(?:\s+from\s+|$)", q, flags=re.IGNORECASE)
+    if m:
+        expr = m.group(1).strip()
+    if not expr:
+        return None
+
+    x_min, x_max = -10.0, 10.0
+    r = re.search(
+        r"\bfrom\s+(-?\d+(?:\.\d+)?)\s+to\s+(-?\d+(?:\.\d+)?)\b",
+        q,
+        flags=re.IGNORECASE,
+    )
+    if r:
+        x_min = float(r.group(1))
+        x_max = float(r.group(2))
+    if x_max <= x_min:
+        x_min, x_max = -10.0, 10.0
+
+    return {"expression": expr.replace("^", "**"), "x_min": x_min, "x_max": x_max}
 
 
 # ── source chip renderer ──────────────────────────────────────────────────────
@@ -409,6 +495,22 @@ with st.sidebar:
     else:
         st.markdown(
             '<span class="badge badge-amber">⚠ Key required</span>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("#### 🧠 Wolfram AppID (optional)")
+    w_key = st.text_input(
+        "wolfram_appid",
+        type="password",
+        placeholder="WOLFRAM_APP_ID",
+        label_visibility="collapsed",
+        key="wolfram_appid_field",
+        value=st.session_state.wolfram_app_id,
+    )
+    if w_key:
+        st.session_state.wolfram_app_id = w_key.strip()
+        st.markdown(
+            '<span class="badge badge-green">✓ Wolfram enabled</span>',
             unsafe_allow_html=True,
         )
 
@@ -550,7 +652,9 @@ with st.sidebar:
 # ═════════════════════════════════════════════════════════════════════════════
 # MAIN TABS
 # ═════════════════════════════════════════════════════════════════════════════
-tab_chat, tab_guide, tab_faq = st.tabs(["💬  Chat", "📖  Study Guide", "❓  FAQ"])
+tab_chat, tab_guide, tab_faq, tab_tools = st.tabs(
+    ["💬  Chat", "📖  Study Guide", "❓  FAQ", "🧰  Tools"]
+)
 
 
 # ── render entire chat history ────────────────────────────────────────────────
@@ -583,6 +687,17 @@ def render_chat_history():
                 f'<div class="msg-ai">{msg["content"]}{src_html}{fu_html}</div>',
                 unsafe_allow_html=True,
             )
+            plot_spec = msg.get("plot")
+            if plot_spec:
+                try:
+                    fig = build_plot_figure(
+                        plot_spec["expression"],
+                        x_min=float(plot_spec.get("x_min", -10.0)),
+                        x_max=float(plot_spec.get("x_max", 10.0)),
+                    )
+                    st.pyplot(fig, clear_figure=True)
+                except Exception:
+                    st.caption("Could not render saved plot.")
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -593,12 +708,12 @@ with tab_chat:
         st.markdown(
             """
         <div class="card card-blue">
-          <div style="font-size:1.05rem;font-weight:600;margin-bottom:10px;">Getting started</div>
+          <div style="font-size:1.05rem;font-weight:600;margin-bottom:10px;">Chat works without index</div>
           <ol style="color:#94a3b8;font-size:0.88rem;line-height:2.1;margin:0;padding-left:18px;">
             <li>Enter your <strong>Gemini API key</strong> in the sidebar</li>
-            <li>Upload <strong>PDF / PPTX</strong> course materials</li>
-            <li>Click <strong>⚡ Build Index</strong></li>
-            <li>Start asking questions here!</li>
+            <li>Ask questions immediately (general tutor mode)</li>
+            <li>Optionally upload <strong>PDF / PPTX</strong> materials</li>
+            <li>Click <strong>⚡ Build Index</strong> for source-grounded RAG answers</li>
           </ol>
         </div>
         """,
@@ -638,13 +753,13 @@ with tab_chat:
             placeholder="e.g. Explain the three-way handshake in TCP…",
             label_visibility="collapsed",
             key="chat_input",
-            disabled=not st.session_state.index_ready,
+            disabled=not st.session_state.api_key_set,
         )
     with col_btn:
         send = st.button(
             "Send →",
             use_container_width=True,
-            disabled=not st.session_state.index_ready,
+            disabled=not st.session_state.api_key_set,
         )
 
     # ── handle submit ─────────────────────────────────────────────────────────
@@ -656,17 +771,51 @@ with tab_chat:
         )
 
         answer, sources, followups = "", [], []
-
-        if not query_notebooklm_style:
+        ai_plot = None
+        plot_request = _parse_plot_request(q)
+        if plot_request and build_plot_figure:
+            try:
+                # Validate by building once now; rendered again from stored spec.
+                _ = build_plot_figure(
+                    plot_request["expression"],
+                    x_min=float(plot_request["x_min"]),
+                    x_max=float(plot_request["x_max"]),
+                )
+                ai_plot = plot_request
+                answer = (
+                    f"Here is the plot for `y = {plot_request['expression']}` "
+                    f"on [{plot_request['x_min']}, {plot_request['x_max']}]."
+                )
+            except Exception as e:
+                answer = f"⚠️ Plot error: {e}"
+        elif run_llamaindex_tool_router:
+            with st.spinner("Thinking…"):
+                try:
+                    routed = run_llamaindex_tool_router(
+                        q,
+                        st.session_state.tutor,
+                        st.session_state.wolfram_app_id,
+                        run_computer_algebra,
+                        convert_units,
+                        wolfram_short_answer,
+                        wikipedia_summary,
+                    )
+                    answer = routed.get("answer", "")
+                    sources = routed.get("sources", [])
+                    followups = routed.get("follow_ups", [])
+                except Exception as e:
+                    answer = f"⚠️ LlamaIndex tool routing error: {e}"
+        elif not query_notebooklm_style:
             answer = (
                 "⚠️ Could not load chat modules. "
                 f"{_MODULE_LOAD_ERROR or 'Unknown error'}"
             )
         elif not st.session_state.tutor:
-            answer = (
-                "⚠️ Tutor is not loaded. Click **⚡ Build Index** again "
-                "(or wait for the embedding model to finish loading)."
-            )
+            with st.spinner("Thinking…"):
+                try:
+                    answer = _general_chat_response(q)
+                except Exception as e:
+                    answer = f"⚠️ Error: {e}"
         else:
             with st.spinner("Thinking…"):
                 try:
@@ -684,6 +833,7 @@ with tab_chat:
                 "content": answer,
                 "sources": sources,
                 "followups": followups,
+                "plot": ai_plot,
             }
         )
         st.rerun()
@@ -752,6 +902,75 @@ with tab_guide:
             f'<div class="output-box">{st.session_state.study_guide}</div>',
             unsafe_allow_html=True,
         )
+
+        st.markdown("##### 🧩 Diagram from this guide")
+        dg_col1, dg_col2, dg_col3 = st.columns([2, 1, 1])
+        with dg_col1:
+            dg_type = st.selectbox(
+                "Diagram type",
+                ["flowchart", "sequenceDiagram", "stateDiagram", "classDiagram"],
+                index=0,
+                key="guide_diagram_type",
+            )
+        with dg_col2:
+            dg_fmt = st.selectbox(
+                "Format",
+                ["svg", "png"],
+                index=0,
+                key="guide_diagram_format",
+            )
+        with dg_col3:
+            make_guide_diagram = st.button(
+                "🪄 Generate Diagram from Guide",
+                use_container_width=True,
+                key="guide_diagram_btn",
+            )
+
+        if make_guide_diagram:
+            try:
+                api_key = os.getenv("GOOGLE_API_KEY", "").strip()
+                with st.spinner("Generating diagram from study guide…"):
+                    mermaid = generate_mermaid_diagram(
+                        topic=guide_topic.strip() or "Study Guide",
+                        source_text=st.session_state.study_guide,
+                        api_key=api_key,
+                        model_name=GEMINI_MODEL,
+                        diagram_type=dg_type,
+                    )
+                    try:
+                        rendered = render_mermaid_with_kroki(mermaid, output_format=dg_fmt)
+                    except Exception:
+                        # Retry once with a model-based Mermaid syntax repair pass.
+                        mermaid = repair_mermaid_diagram(mermaid, api_key=api_key, model_name=GEMINI_MODEL)
+                        rendered = render_mermaid_with_kroki(mermaid, output_format=dg_fmt)
+                    st.session_state.study_guide_mermaid = mermaid
+                    st.session_state.study_guide_diagram = rendered
+                    st.session_state.study_guide_diagram_format = dg_fmt
+            except Exception as e:
+                st.error(f"Diagram error: {e}")
+
+        if st.session_state.study_guide_diagram:
+            st.markdown("**Mermaid code**")
+            st.code(st.session_state.study_guide_mermaid, language="text")
+            st.image(st.session_state.study_guide_diagram)
+            dl_name = (
+                "study_guide_diagram.svg"
+                if st.session_state.study_guide_diagram_format == "svg"
+                else "study_guide_diagram.png"
+            )
+            dl_mime = (
+                "image/svg+xml"
+                if st.session_state.study_guide_diagram_format == "svg"
+                else "image/png"
+            )
+            st.download_button(
+                "⬇ Download guide diagram",
+                data=st.session_state.study_guide_diagram,
+                file_name=dl_name,
+                mime=dl_mime,
+                use_container_width=True,
+                key="guide_diagram_download",
+            )
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -828,3 +1047,157 @@ with tab_faq:
             f'<div class="output-box">{st.session_state.faq}</div>',
             unsafe_allow_html=True,
         )
+
+
+# ════════════════════════════════════════════════════════════════════
+# TAB 4 – TOOLS
+# ════════════════════════════════════════════════════════════════════
+with tab_tools:
+    st.markdown(
+        """
+    <div class="card card-blue">
+      <div style="font-size:1rem;font-weight:600;margin-bottom:4px;">🧰 Math + Programming Tools</div>
+      <div style="color:#94a3b8;font-size:0.84rem;">
+        Local computer algebra, plotting, unit conversion, Wikipedia lookup, and optional Wolfram answers.
+      </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    if not run_computer_algebra:
+        st.error(f"Tool module import failed: {_MODULE_LOAD_ERROR or 'Unknown error'}")
+    else:
+        tool_mode = st.selectbox(
+            "Choose a tool",
+            [
+                "Computer Algebra",
+                "Plot Function",
+                "Unit Conversion",
+                "Wikipedia Summary",
+                "Generate Diagram (Mermaid + Kroki)",
+                "Wolfram Short Answer",
+            ],
+        )
+
+        if tool_mode == "Computer Algebra":
+            expr = st.text_input("Expression or equation", placeholder="e.g. x^2 + 2*x + 1")
+            op = st.selectbox(
+                "Operation",
+                ["simplify", "expand", "factor", "differentiate", "integrate", "solve", "limit"],
+            )
+            var = st.text_input("Variable", value="x")
+            limit_at = st.text_input("Limit point (only for limit)", value="0")
+            if st.button("Run Algebra", use_container_width=True):
+                try:
+                    at_value = float(limit_at) if op == "limit" else None
+                    result = run_computer_algebra(expr, op, variable=var, at_value=at_value)
+                    st.success("Done")
+                    st.code(result.output, language="text")
+                except Exception as e:
+                    st.error(f"Algebra error: {e}")
+
+        elif tool_mode == "Plot Function":
+            expr = st.text_input("Function f(x)", value="sin(x) + x/3")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                x_min = st.number_input("x min", value=-10.0)
+            with col2:
+                x_max = st.number_input("x max", value=10.0)
+            with col3:
+                points = st.number_input("Points", value=400, min_value=50, max_value=5000)
+            if st.button("Plot", use_container_width=True):
+                try:
+                    fig = build_plot_figure(expr, x_min=float(x_min), x_max=float(x_max), points=int(points))
+                    st.pyplot(fig, clear_figure=True)
+                except Exception as e:
+                    st.error(f"Plot error: {e}")
+
+        elif tool_mode == "Unit Conversion":
+            c1, c2, c3 = st.columns([1, 2, 2])
+            with c1:
+                value = st.number_input("Value", value=1.0)
+            with c2:
+                from_unit = st.text_input("From unit", value="meter")
+            with c3:
+                to_unit = st.text_input("To unit", value="foot")
+            if st.button("Convert", use_container_width=True):
+                try:
+                    output = convert_units(float(value), from_unit.strip(), to_unit.strip())
+                    st.success(output)
+                except Exception as e:
+                    st.error(f"Conversion error: {e}")
+
+        elif tool_mode == "Wikipedia Summary":
+            query = st.text_input("Wikipedia query", value="Fourier transform")
+            sentences = st.slider("Sentences", min_value=1, max_value=6, value=3)
+            if st.button("Fetch Summary", use_container_width=True):
+                try:
+                    summary = wikipedia_summary(query, sentences=sentences)
+                    st.success("Done")
+                    st.write(summary)
+                except Exception as e:
+                    st.error(f"Wikipedia error: {e}")
+
+        elif tool_mode == "Generate Diagram (Mermaid + Kroki)":
+            topic = st.text_input("Diagram topic", value="TCP 3-way handshake")
+            dtype = st.selectbox(
+                "Diagram type",
+                ["flowchart", "sequenceDiagram", "stateDiagram", "classDiagram"],
+                index=0,
+            )
+            default_src = st.session_state.study_guide or ""
+            src = st.text_area(
+                "Source text (optional, uses study guide if available)",
+                value=default_src,
+                height=180,
+            )
+            out_fmt = st.selectbox("Render format", ["svg", "png"], index=0)
+            if st.button("Generate Diagram", use_container_width=True):
+                try:
+                    api_key = os.getenv("GOOGLE_API_KEY", "").strip()
+                    mermaid = generate_mermaid_diagram(
+                        topic=topic,
+                        source_text=src,
+                        api_key=api_key,
+                        model_name=GEMINI_MODEL,
+                        diagram_type=dtype,
+                    )
+                    st.markdown("**Mermaid code**")
+                    st.code(mermaid, language="text")
+
+                    try:
+                        rendered = render_mermaid_with_kroki(mermaid, output_format=out_fmt)
+                    except Exception:
+                        mermaid = repair_mermaid_diagram(mermaid, api_key=api_key, model_name=GEMINI_MODEL)
+                        rendered = render_mermaid_with_kroki(mermaid, output_format=out_fmt)
+                        st.markdown("**Repaired Mermaid code**")
+                        st.code(mermaid, language="text")
+                    if out_fmt == "svg":
+                        st.image(rendered)
+                        mime = "image/svg+xml"
+                        fname = "diagram.svg"
+                    else:
+                        st.image(rendered)
+                        mime = "image/png"
+                        fname = "diagram.png"
+                    st.download_button(
+                        "⬇ Download diagram",
+                        data=rendered,
+                        file_name=fname,
+                        mime=mime,
+                        use_container_width=True,
+                    )
+                except Exception as e:
+                    st.error(f"Diagram error: {e}")
+
+        else:
+            q = st.text_input("Ask Wolfram", placeholder="e.g. integrate x^2 sin(x) dx")
+            if not st.session_state.wolfram_app_id:
+                st.warning("Add Wolfram AppID in the sidebar to enable this tool.")
+            if st.button("Query Wolfram", use_container_width=True):
+                try:
+                    answer = wolfram_short_answer(q, st.session_state.wolfram_app_id)
+                    st.success(answer)
+                except Exception as e:
+                    st.error(f"Wolfram error: {e}")

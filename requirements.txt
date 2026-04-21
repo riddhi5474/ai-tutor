@@ -12,3 +12,8 @@ pytesseract
 python-pptx
 python-dotenv
 streamlit
+sympy
+numpy
+matplotlib
+pint
+requests
