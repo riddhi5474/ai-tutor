@@ -5,6 +5,8 @@ Generates a structured study guide for a given topic
 using the RAG tutor as the knowledge source.
 """
 
+from typing import Any, Dict
+
 from core.tutor import AITutor
 
 
@@ -33,7 +35,9 @@ Structure:
 Base the guide ENTIRELY on the course materials provided."""
 
 
-def generate_study_guide(topic: str, tutor: AITutor) -> str:
-    """Generate a full study guide for `topic` using the tutor's knowledge base."""
-    result = tutor.query(_TEMPLATE.format(topic=topic), response_format="notes")
-    return result["response"]
+def generate_study_guide(topic: str, tutor: AITutor) -> Dict[str, Any]:
+    """Generate a full study guide for `topic` using the tutor's knowledge base.
+
+    Returns the same shape as ``AITutor.query`` (``response`` + ``source_nodes``).
+    """
+    return tutor.query(_TEMPLATE.format(topic=topic), response_format="notes")

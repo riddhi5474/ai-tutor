@@ -4,6 +4,7 @@ Run: streamlit run app.py  (from inside ai_tutor/)
 """
 
 import streamlit as st
+import json
 import os
 import re
 import shutil
@@ -11,7 +12,7 @@ import uuid
 from pathlib import Path
 import importlib
 
-from config import EMBED_MODEL, GEMINI_MODEL
+from config import CHAT_INPUT_PLACEHOLDER, EMBED_MODEL, GEMINI_MODEL
 from storage import (
     append_message,
     clear_messages,
@@ -200,19 +201,32 @@ st.markdown(
   }
 
   .stTabs [data-baseweb="tab-list"] {
-    background: var(--surface) !important;
-    border-bottom: 1px solid var(--border);
-    gap: 4px;
+    background: linear-gradient(180deg, #151a25 0%, #121722 100%) !important;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 8px 10px;
+    display: flex;
+    width: 100%;
+    gap: 8px;
+    margin: 8px 0 16px 0;
   }
   .stTabs [data-baseweb="tab"] {
-    background: transparent !important;
+    background: #171c28 !important;
+    border: 1px solid #242b3a !important;
+    border-radius: 10px !important;
     color: var(--muted) !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
+    min-height: 46px;
+    padding: 0 14px !important;
+    flex: 1 1 0;
+    justify-content: center;
+    text-align: center;
   }
   .stTabs [aria-selected="true"] {
-    background: var(--surf2) !important;
+    background: #1e2840 !important;
     color: var(--text) !important;
-    border-bottom: 2px solid var(--accent) !important;
+    border-color: #2b4f9f !important;
+    box-shadow: 0 0 0 1px rgba(91,141,238,.25) inset !important;
   }
 
   hr { border-color: var(--border) !important; }
@@ -234,6 +248,7 @@ st.markdown(
 _DEFAULTS = {
     "tutor": None,
     "index_ready": False,
+    "tutor_error": "",
     # each entry: {"role":"user"|"ai", "content":str, "sources":list[dict], "followups":list[str]}
     "chat_history": [],
     "study_guide": "",
@@ -242,6 +257,7 @@ _DEFAULTS = {
     "study_guide_diagram_format": "svg",
     "faq": "",
     "api_key_set": False,
+    "api_key_value": "",
     "saved_files": [],
     "active_conversation_id": "",
     "wolfram_app_id": "",
@@ -262,11 +278,37 @@ def _ensure_active_conversation_id() -> str:
     if convs:
         st.session_state.active_conversation_id = convs[0]["id"]
     else:
-        st.session_state.active_conversation_id = create_conversation("Chat 1")
+        st.session_state.active_conversation_id = create_conversation("New chat")
     return st.session_state.active_conversation_id
 
 
+def _bootstrap_backend_secrets() -> None:
+    api_key = (
+        os.getenv("GOOGLE_API_KEY", "").strip() or os.getenv("GEMINI_API_KEY", "").strip()
+    )
+    if api_key:
+        os.environ["GOOGLE_API_KEY"] = api_key
+        os.environ["GEMINI_API_KEY"] = api_key
+        st.session_state.api_key_set = True
+        st.session_state.api_key_value = api_key
+    else:
+        st.session_state.api_key_set = False
+        st.session_state.api_key_value = ""
+
+    st.session_state.wolfram_app_id = os.getenv("WOLFRAM_APP_ID", "").strip()
+
+
+def _conversation_title_from_question(question: str) -> str:
+    text = re.sub(r"\s+", " ", (question or "").strip())
+    if not text:
+        return "New chat"
+    if len(text) > 52:
+        text = text[:52].rstrip() + "..."
+    return text
+
+
 cid = _ensure_active_conversation_id()
+_bootstrap_backend_secrets()
 if st.session_state._prev_conv_id != cid:
     st.session_state.chat_history = list_messages_for_ui(cid)
     row = get_conversation(cid)
@@ -366,21 +408,35 @@ def _cached_aitutor(cleaned_dir_abs: str, corpus_fp: str):
 
 
 def _attach_tutor_from_cache(cleaned_dir: Path) -> None:
-    if not st.session_state.index_ready or AITutor is None:
+    if AITutor is None:
         return
     txts = list(cleaned_dir.glob("*.txt"))
     if not txts:
         st.session_state.index_ready = False
         st.session_state.tutor = None
+        st.session_state.tutor_error = "No parsed text files found for this conversation."
         return
     fp = _cleaned_corpus_fingerprint(cleaned_dir)
     if not fp:
         return
     try:
         st.session_state.tutor = _cached_aitutor(str(cleaned_dir.resolve()), fp)
-    except Exception:
+        st.session_state.index_ready = True
+        st.session_state.tutor_error = ""
+    except Exception as e:
         st.session_state.tutor = None
         st.session_state.index_ready = False
+        st.session_state.tutor_error = f"{type(e).__name__}: {e}"
+
+
+def _ensure_tutor_loaded(cleaned_dir: Path) -> bool:
+    """
+    Best-effort recovery when session state loses the in-memory tutor object.
+    """
+    if st.session_state.tutor:
+        return True
+    _attach_tutor_from_cache(cleaned_dir)
+    return bool(st.session_state.tutor)
 
 
 _attach_tutor_from_cache(CLEANED_DIR)
@@ -410,6 +466,47 @@ def _parse_plot_request(question: str) -> dict | None:
     if not any(k in ql for k in ("plot", "graph", "draw")):
         return None
 
+    # LLM-first extraction: robust against varied natural language.
+    api_key = os.getenv("GOOGLE_API_KEY", "").strip()
+    if api_key:
+        try:
+            import google.generativeai as genai
+
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel(GEMINI_MODEL)
+            prompt = (
+                "Extract plotting parameters from the user request and return ONLY JSON.\n"
+                'Schema: {"expression": string, "x_min": number, "x_max": number}\n'
+                "Rules:\n"
+                "- expression should be a math expression in x\n"
+                "- normalize ^ to **\n"
+                "- if bounds are not provided, use -10 and 10\n"
+                "- if request is not a plot request, return {}\n\n"
+                f"User request: {q}"
+            )
+            raw = (getattr(model.generate_content(prompt), "text", "") or "").strip()
+            if raw:
+                cleaned = raw.strip()
+                if cleaned.startswith("```"):
+                    cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+                    cleaned = re.sub(r"\s*```$", "", cleaned)
+                obj = json.loads(cleaned)
+                expr = str((obj or {}).get("expression", "")).strip()
+                if expr:
+                    x_min = float((obj or {}).get("x_min", -10.0))
+                    x_max = float((obj or {}).get("x_max", 10.0))
+                    if x_max <= x_min:
+                        x_min, x_max = -10.0, 10.0
+                    return {
+                        "expression": expr.replace("^", "**"),
+                        "x_min": x_min,
+                        "x_max": x_max,
+                    }
+        except Exception:
+            # Fall back to deterministic regex parsing below.
+            pass
+
+    # Regex fallback (fast + no model call needed if LLM parse fails)
     expr = None
     m = re.search(r"(?:plot|graph|draw)\s+(.+?)(?:\s+from\s+|$)", q, flags=re.IGNORECASE)
     if m:
@@ -472,50 +569,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # ── API key ───────────────────────────────────────────────────────────────
-    st.markdown("#### 🔑 Gemini API Key")
-    api_key = st.text_input(
-        "key",
-        type="password",
-        placeholder="AIza…",
-        label_visibility="collapsed",
-        key="api_key_field",
-    )
-    if api_key:
-        os.environ["GOOGLE_API_KEY"] = api_key
-        st.session_state.api_key_set = True
-        st.markdown(
-            '<span class="badge badge-green">✓ Key saved</span>', unsafe_allow_html=True
-        )
-    elif st.session_state.api_key_set:
-        st.markdown(
-            '<span class="badge badge-blue">Key in session</span>',
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            '<span class="badge badge-amber">⚠ Key required</span>',
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("#### 🧠 Wolfram AppID (optional)")
-    w_key = st.text_input(
-        "wolfram_appid",
-        type="password",
-        placeholder="WOLFRAM_APP_ID",
-        label_visibility="collapsed",
-        key="wolfram_appid_field",
-        value=st.session_state.wolfram_app_id,
-    )
-    if w_key:
-        st.session_state.wolfram_app_id = w_key.strip()
-        st.markdown(
-            '<span class="badge badge-green">✓ Wolfram enabled</span>',
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("---")
-
     # ── conversations (SQLite + local storage) ────────────────────────────────
     st.markdown("#### 💬 Conversations")
     convs = list_conversations()
@@ -539,8 +592,7 @@ with st.sidebar:
     col_nc, col_del = st.columns(2)
     with col_nc:
         if st.button("➕ New", use_container_width=True):
-            n = len(list_conversations()) + 1
-            st.session_state.active_conversation_id = create_conversation(f"Chat {n}")
+            st.session_state.active_conversation_id = create_conversation("New chat")
             st.session_state._prev_conv_id = None
             st.rerun()
     with col_del:
@@ -549,7 +601,7 @@ with st.sidebar:
             delete_conversation(cur)
             remaining = list_conversations()
             st.session_state.active_conversation_id = (
-                remaining[0]["id"] if remaining else create_conversation("Chat 1")
+                remaining[0]["id"] if remaining else create_conversation("New chat")
             )
             st.session_state._prev_conv_id = None
             st.rerun()
@@ -609,6 +661,7 @@ with st.sidebar:
                 fp = _cleaned_corpus_fingerprint(CLEANED_DIR)
                 st.session_state.tutor = _cached_aitutor(str(CLEANED_DIR.resolve()), fp)
                 st.session_state.index_ready = True
+                st.session_state.tutor_error = ""
                 set_documents_status(cid, "indexed")
                 update_conversation_extras(
                     cid,
@@ -617,6 +670,7 @@ with st.sidebar:
                 )
             except Exception as e:
                 set_documents_status(cid, "failed", str(e))
+                st.session_state.tutor_error = str(e)
                 st.error(
                     f"Index build failed: {e}\n"
                     f"(debug: uploads={len(upload_files)}, parsed_txt={len(list(CLEANED_DIR.glob('*.txt')))}, cleaned_files={[p.name for p in cleaned_files] if 'cleaned_files' in locals() else []})"
@@ -670,17 +724,9 @@ def render_chat_history():
             # sources
             src_html = _sources_html(msg.get("sources", [])) if show_sources else ""
 
-            # follow-ups (display-only pills; interactive buttons rendered below input)
+            # follow-ups are rendered as clickable buttons below the chat input
+            # to avoid duplicating them inside every AI message bubble.
             fu_html = ""
-            if show_followups and msg.get("followups"):
-                pills = "".join(
-                    f'<span class="fu-pill">💡 {q}</span>' for q in msg["followups"][:3]
-                )
-                fu_html = (
-                    '<div class="followup-section">'
-                    '<div class="followup-label">You might also ask</div>'
-                    f"{pills}</div>"
-                )
 
             st.markdown(
                 '<div class="msg-label" style="margin-left:6px;">🎓 AI Tutor</div>'
@@ -700,17 +746,139 @@ def render_chat_history():
                     st.caption("Could not render saved plot.")
 
 
+def _process_chat_turn(q: str) -> None:
+    """Send user message, run tutor, append AI reply, rerun."""
+    prior_history = list(st.session_state.chat_history)
+    append_message(cid, "user", q)
+    row = get_conversation(cid) or {}
+    current_title = (row.get("title") or "").strip().lower()
+    if current_title in {"", "new chat"}:
+        update_conversation_extras(cid, title=_conversation_title_from_question(q))
+    st.session_state.chat_history.append(
+        {"role": "user", "content": q, "sources": [], "followups": []}
+    )
+
+    answer, sources, followups = "", [], []
+    ai_plot = None
+    plot_request = _parse_plot_request(q)
+
+    if plot_request and build_plot_figure:
+        try:
+            # Validate by building once now; rendered again from stored spec.
+            _ = build_plot_figure(
+                plot_request["expression"],
+                x_min=float(plot_request["x_min"]),
+                x_max=float(plot_request["x_max"]),
+            )
+            ai_plot = plot_request
+            answer = (
+                f"Here is the plot for `y = {plot_request['expression']}` "
+                f"on [{plot_request['x_min']}, {plot_request['x_max']}]."
+            )
+        except Exception as e:
+            answer = f"⚠️ Plot error: {e}"
+    elif run_llamaindex_tool_router:
+        with st.spinner("Thinking…"):
+            try:
+                routed = run_llamaindex_tool_router(
+                    q,
+                    st.session_state.tutor,
+                    st.session_state.wolfram_app_id,
+                    run_computer_algebra,
+                    convert_units,
+                    wolfram_short_answer,
+                    wikipedia_summary,
+                )
+                answer = routed.get("answer", "")
+                sources = routed.get("sources", [])
+                followups = routed.get("follow_ups", [])
+            except Exception as e:
+                answer = f"⚠️ LlamaIndex tool routing error: {e}"
+    elif not query_notebooklm_style:
+        answer = (
+            "⚠️ Could not load chat modules. "
+            f"{_MODULE_LOAD_ERROR or 'Unknown error'}"
+        )
+    elif not st.session_state.tutor and not st.session_state.index_ready:
+        with st.spinner("Thinking…"):
+            try:
+                answer = _general_chat_response(q)
+            except Exception as e:
+                answer = f"⚠️ Error: {e}"
+    elif not st.session_state.tutor:
+        _ensure_tutor_loaded(CLEANED_DIR)
+        if st.session_state.tutor:
+            with st.spinner("Thinking…"):
+                try:
+                    result = query_notebooklm_style(
+                        q,
+                        st.session_state.tutor,
+                        conversation_history=prior_history,
+                        num_turns=3,
+                    )
+                    answer = result.get("answer", "")
+                    sources = result.get("sources", [])
+                    followups = result.get("follow_ups", [])
+                except Exception as e:
+                    answer = f"⚠️ Error: {e}"
+        else:
+            answer = (
+                "⚠️ Tutor is not loaded. Click **⚡ Build Index** again "
+                "(or wait for the embedding model to finish loading)."
+            )
+            if st.session_state.tutor_error:
+                answer += f"\n\nDetails: {st.session_state.tutor_error}"
+    else:
+        with st.spinner("Thinking…"):
+            try:
+                result = query_notebooklm_style(
+                    q,
+                    st.session_state.tutor,
+                    conversation_history=prior_history,
+                    num_turns=3,
+                )
+                answer = result.get("answer", "")
+                sources = result.get("sources", [])
+                followups = result.get("follow_ups", [])
+            except Exception as e:
+                answer = f"⚠️ Error: {e}"
+
+    append_message(cid, "ai", answer, sources=sources, followups=followups)
+    st.session_state.chat_history.append(
+        {
+            "role": "ai",
+            "content": answer,
+            "sources": sources,
+            "followups": followups,
+            "plot": ai_plot,
+        }
+    )
+    # Clear input on the next run (must be done before the widget is instantiated).
+    st.session_state["_clear_chat_input"] = True
+    st.rerun()
+
+
+def _on_enter_send() -> None:
+    # Triggered by Enter in the text input.
+    st.session_state["_submit_chat"] = True
+
+
 # ════════════════════════════════════════════════════════════════════
 # TAB 1 – CHAT
 # ════════════════════════════════════════════════════════════════════
 with tab_chat:
+    has_parsed_text = bool(list(CLEANED_DIR.glob("*.txt")))
+    chat_enabled = st.session_state.api_key_set
+    if chat_enabled and not st.session_state.index_ready:
+        st.session_state.index_ready = has_parsed_text
+
     if not st.session_state.index_ready:
         st.markdown(
             """
         <div class="card card-blue">
           <div style="font-size:1.05rem;font-weight:600;margin-bottom:10px;">Chat works without index</div>
           <ol style="color:#94a3b8;font-size:0.88rem;line-height:2.1;margin:0;padding-left:18px;">
-            <li>Enter your <strong>Gemini API key</strong> in the sidebar</li>
+            <li>Set <strong>GEMINI_API_KEY</strong> (or <strong>GOOGLE_API_KEY</strong>) in backend env</li>
             <li>Ask questions immediately (general tutor mode)</li>
             <li>Optionally upload <strong>PDF / PPTX</strong> materials</li>
             <li>Click <strong>⚡ Build Index</strong> for source-grounded RAG answers</li>
@@ -739,104 +907,45 @@ with tab_chat:
             fu_cols = st.columns(min(len(last_ai["followups"][:3]), 3))
             for i, fq in enumerate(last_ai["followups"][:3]):
                 with fu_cols[i]:
-                    if st.button(f"💡 {fq}", key=f"fu_{i}", use_container_width=True):
-                        st.session_state["_pending_q"] = fq
+                    if st.button(
+                        f"💡 {fq}",
+                        key=f"fu_{cid}_{i}",
+                        use_container_width=True,
+                    ):
+                        st.session_state["_instant_followup_q"] = fq
 
-    # ── input row ─────────────────────────────────────────────────────────────
+    # One-click follow-up: must run after buttons (same script run as the click)
+    instant_q = st.session_state.pop("_instant_followup_q", None)
+    if (
+        chat_enabled
+        and instant_q
+        and isinstance(instant_q, str)
+        and instant_q.strip()
+    ):
+        _process_chat_turn(instant_q.strip())
+
+    # ── input row (Enter or Send button) ──────────────────────────────────────
+    _ph = CHAT_INPUT_PLACEHOLDER if CHAT_INPUT_PLACEHOLDER else None
     col_in, col_btn = st.columns([5, 1])
     with col_in:
-        # if a follow-up button was clicked, pre-fill the input
-        pending = st.session_state.pop("_pending_q", "")
+        if st.session_state.pop("_clear_chat_input", False):
+            st.session_state["chat_input"] = ""
         user_q = st.text_input(
             "question",
-            value=pending,
-            placeholder="e.g. Explain the three-way handshake in TCP…",
+            placeholder=_ph,
             label_visibility="collapsed",
             key="chat_input",
-            disabled=not st.session_state.api_key_set,
+            disabled=not chat_enabled,
+            on_change=_on_enter_send,
         )
     with col_btn:
-        send = st.button(
-            "Send →",
-            use_container_width=True,
-            disabled=not st.session_state.api_key_set,
-        )
+        send = st.button("Send →", use_container_width=True, disabled=not chat_enabled)
 
-    # ── handle submit ─────────────────────────────────────────────────────────
-    if send and user_q.strip():
-        q = user_q.strip()
-        append_message(cid, "user", q)
-        st.session_state.chat_history.append(
-            {"role": "user", "content": q, "sources": [], "followups": []}
-        )
-
-        answer, sources, followups = "", [], []
-        ai_plot = None
-        plot_request = _parse_plot_request(q)
-        if plot_request and build_plot_figure:
-            try:
-                # Validate by building once now; rendered again from stored spec.
-                _ = build_plot_figure(
-                    plot_request["expression"],
-                    x_min=float(plot_request["x_min"]),
-                    x_max=float(plot_request["x_max"]),
-                )
-                ai_plot = plot_request
-                answer = (
-                    f"Here is the plot for `y = {plot_request['expression']}` "
-                    f"on [{plot_request['x_min']}, {plot_request['x_max']}]."
-                )
-            except Exception as e:
-                answer = f"⚠️ Plot error: {e}"
-        elif run_llamaindex_tool_router:
-            with st.spinner("Thinking…"):
-                try:
-                    routed = run_llamaindex_tool_router(
-                        q,
-                        st.session_state.tutor,
-                        st.session_state.wolfram_app_id,
-                        run_computer_algebra,
-                        convert_units,
-                        wolfram_short_answer,
-                        wikipedia_summary,
-                    )
-                    answer = routed.get("answer", "")
-                    sources = routed.get("sources", [])
-                    followups = routed.get("follow_ups", [])
-                except Exception as e:
-                    answer = f"⚠️ LlamaIndex tool routing error: {e}"
-        elif not query_notebooklm_style:
-            answer = (
-                "⚠️ Could not load chat modules. "
-                f"{_MODULE_LOAD_ERROR or 'Unknown error'}"
-            )
-        elif not st.session_state.tutor:
-            with st.spinner("Thinking…"):
-                try:
-                    answer = _general_chat_response(q)
-                except Exception as e:
-                    answer = f"⚠️ Error: {e}"
-        else:
-            with st.spinner("Thinking…"):
-                try:
-                    result = query_notebooklm_style(q, st.session_state.tutor)
-                    answer = result.get("answer", "")
-                    sources = result.get("sources", [])
-                    followups = result.get("follow_ups", [])
-                except Exception as e:
-                    answer = f"⚠️ Error: {e}"
-
-        append_message(cid, "ai", answer, sources=sources, followups=followups)
-        st.session_state.chat_history.append(
-            {
-                "role": "ai",
-                "content": answer,
-                "sources": sources,
-                "followups": followups,
-                "plot": ai_plot,
-            }
-        )
-        st.rerun()
+    should_submit = send or st.session_state.pop("_submit_chat", False)
+    if should_submit:
+        q = (st.session_state.get("chat_input") or "").strip()
+        if q:
+            _process_chat_turn(q)
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -890,9 +999,18 @@ with tab_guide:
             with st.spinner(f"Generating study guide for '{topic}'…"):
                 try:
                     # ✅ Exact signature: generate_study_guide(topic, tutor)
-                    guide = generate_study_guide(topic, st.session_state.tutor)
+                    guide_out = generate_study_guide(topic, st.session_state.tutor)
+                    guide = guide_out["response"]
+                    sources_json = json.dumps(
+                        guide_out.get("source_nodes") or [],
+                        ensure_ascii=False,
+                    )
                     st.session_state.study_guide = guide
-                    update_conversation_extras(cid, study_guide=guide)
+                    update_conversation_extras(
+                        cid,
+                        study_guide=guide,
+                        study_guide_sources_json=sources_json,
+                    )
                     st.success("Study guide saved to this conversation.")
                 except Exception as e:
                     st.error(f"Error: {e}")
@@ -902,6 +1020,30 @@ with tab_guide:
             f'<div class="output-box">{st.session_state.study_guide}</div>',
             unsafe_allow_html=True,
         )
+        _row_sg = get_conversation(cid) or {}
+        _cur_sg = _row_sg.get("study_guide_csat")
+        _def_sg = int(round(float(_cur_sg))) if _cur_sg is not None else 3
+        _sg_key = f"study_guide_csat_slider_{cid}_{_cur_sg!s}"
+        st.caption(
+            f"Saved rating in database: **{int(round(float(_cur_sg)))}/5**"
+            if _cur_sg is not None
+            else "No rating saved yet — set 1–5 and click **Save rating** (used by `evaluation.py`)."
+        )
+        c_sg_a, c_sg_b = st.columns([4, 1])
+        with c_sg_a:
+            _sg_rv = st.slider(
+                "Your rating: study guide (1–5)",
+                1,
+                5,
+                _def_sg,
+                key=_sg_key,
+            )
+        with c_sg_b:
+            st.write("")  # align button with slider
+            st.write("")
+            if st.button("Save rating", key=f"study_guide_csat_save_{cid}"):
+                update_conversation_extras(cid, study_guide_csat=float(_sg_rv))
+                st.rerun()
 
         st.markdown("##### 🧩 Diagram from this guide")
         dg_col1, dg_col2, dg_col3 = st.columns([2, 1, 1])
@@ -1033,11 +1175,20 @@ with tab_faq:
             with st.spinner(f"Generating {faq_n} FAQ questions for '{topic}'…"):
                 try:
                     # ✅ Exact signature: generate_faq(topic, tutor, num_questions)
-                    faq = generate_faq(
+                    faq_out = generate_faq(
                         topic, st.session_state.tutor, num_questions=faq_n
                     )
+                    faq = faq_out["response"]
+                    faq_sources_json = json.dumps(
+                        faq_out.get("source_nodes") or [],
+                        ensure_ascii=False,
+                    )
                     st.session_state.faq = faq
-                    update_conversation_extras(cid, faq=faq)
+                    update_conversation_extras(
+                        cid,
+                        faq=faq,
+                        faq_sources_json=faq_sources_json,
+                    )
                     st.success("FAQ saved to this conversation.")
                 except Exception as e:
                     st.error(f"Error: {e}")
@@ -1047,6 +1198,30 @@ with tab_faq:
             f'<div class="output-box">{st.session_state.faq}</div>',
             unsafe_allow_html=True,
         )
+        _row_fq = get_conversation(cid) or {}
+        _cur_fq = _row_fq.get("faq_csat")
+        _def_fq = int(round(float(_cur_fq))) if _cur_fq is not None else 3
+        _fq_key = f"faq_csat_slider_{cid}_{_cur_fq!s}"
+        st.caption(
+            f"Saved rating in database: **{int(round(float(_cur_fq)))}/5**"
+            if _cur_fq is not None
+            else "No rating saved yet — set 1–5 and click **Save rating** (used by `evaluation.py`)."
+        )
+        c_fq_a, c_fq_b = st.columns([4, 1])
+        with c_fq_a:
+            _fq_rv = st.slider(
+                "Your rating: FAQ (1–5)",
+                1,
+                5,
+                _def_fq,
+                key=_fq_key,
+            )
+        with c_fq_b:
+            st.write("")
+            st.write("")
+            if st.button("Save rating", key=f"faq_csat_save_{cid}"):
+                update_conversation_extras(cid, faq_csat=float(_fq_rv))
+                st.rerun()
 
 
 # ════════════════════════════════════════════════════════════════════

@@ -5,14 +5,53 @@ Math utility tools for Streamlit AI Tutor.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pint
 import sympy as sp
+from sympy.parsing.sympy_parser import (
+    convert_xor,
+    implicit_multiplication_application,
+    parse_expr,
+    standard_transformations,
+)
 
 
 ureg = pint.UnitRegistry()
+_TRANSFORMS = standard_transformations + (
+    implicit_multiplication_application,
+    convert_xor,
+)
+
+
+def _normalize_expression(expr: str) -> str:
+    """
+    Make casual math input more parser-friendly.
+    Examples: sinx -> sin(x), cos t -> cos(t), lnx -> log(x)
+    """
+    text = (expr or "").strip()
+    if not text:
+        return text
+    text = re.sub(r"\bln\s*\(", "log(", text)
+    text = re.sub(r"\bln\s+([A-Za-z0-9_]+)\b", r"log(\1)", text)
+    text = re.sub(r"\bln([A-Za-z])\b", r"log(\1)", text)
+    text = re.sub(
+        r"\b(sin|cos|tan|sec|csc|cot|sqrt|log)\s+([A-Za-z0-9_]+)\b",
+        r"\1(\2)",
+        text,
+    )
+    text = re.sub(
+        r"\b(sin|cos|tan|sec|csc|cot|sqrt|log)([A-Za-z])\b",
+        r"\1(\2)",
+        text,
+    )
+    return text
+
+
+def _friendly_sympify(expr: str) -> sp.Expr:
+    return parse_expr(_normalize_expression(expr), transformations=_TRANSFORMS)
 
 
 @dataclass
@@ -25,8 +64,8 @@ class AlgebraResult:
 def _parse_equation(expr: str) -> sp.Expr:
     if "=" in expr:
         left, right = expr.split("=", 1)
-        return sp.Eq(sp.sympify(left.strip()), sp.sympify(right.strip()))
-    return sp.sympify(expr)
+        return sp.Eq(_friendly_sympify(left.strip()), _friendly_sympify(right.strip()))
+    return _friendly_sympify(expr)
 
 
 def run_computer_algebra(
@@ -43,7 +82,7 @@ def run_computer_algebra(
         solved = sp.solve(eq, x)
         return AlgebraResult(op, expression, str(solved))
 
-    expr = sp.sympify(expression)
+    expr = _friendly_sympify(expression)
     if op == "simplify":
         out = sp.simplify(expr)
     elif op == "expand":
@@ -76,7 +115,7 @@ def build_plot_figure(
     points = max(50, min(points, 5000))
 
     x = sp.Symbol(variable)
-    expr = sp.sympify(expression)
+    expr = _friendly_sympify(expression)
     fn = sp.lambdify(x, expr, modules=["numpy"])
     xs = np.linspace(x_min, x_max, points)
     ys = np.asarray(fn(xs), dtype=float)

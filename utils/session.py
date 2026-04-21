@@ -72,7 +72,8 @@ def interactive_tutor_session(tutor: AITutor) -> None:
             if cmd.startswith("guide "):
                 topic = user_input[6:].strip()
                 print(f"\n🔄 Generating study guide for: {topic}...\n")
-                guide = generate_study_guide(topic, tutor)
+                guide_out = generate_study_guide(topic, tutor)
+                guide = guide_out["response"]
                 _print_block(f"📖 Study Guide: {topic}", guide)
                 continue
 
@@ -91,7 +92,8 @@ def interactive_tutor_session(tutor: AITutor) -> None:
             if cmd.startswith("faq "):
                 topic = user_input[4:].strip()
                 print(f"\n🔄 Generating FAQ for: {topic}...\n")
-                faq = generate_faq(topic, tutor, num_questions=5)
+                faq_out = generate_faq(topic, tutor, num_questions=5)
+                faq = faq_out["response"]
                 _print_block(f"❓ FAQ: {topic}", faq)
                 continue
 

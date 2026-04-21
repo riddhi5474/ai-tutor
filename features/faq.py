@@ -5,6 +5,8 @@ Generates a Frequently Asked Questions document for a topic
 using the RAG tutor as the knowledge source.
 """
 
+from typing import Any, Dict
+
 from core.tutor import AITutor
 
 
@@ -19,8 +21,10 @@ A: [Concise 2-3 sentence answer]
 Base answers ONLY on the course materials provided."""
 
 
-def generate_faq(topic: str, tutor: AITutor, num_questions: int = 5) -> str:
-    """Generate an FAQ for `topic` with `num_questions` entries."""
+def generate_faq(topic: str, tutor: AITutor, num_questions: int = 5) -> Dict[str, Any]:
+    """Generate an FAQ for `topic` with ``num_questions`` entries.
+
+    Returns the same shape as ``AITutor.query`` (``response`` + ``source_nodes``).
+    """
     prompt = _TEMPLATE.format(topic=topic, n=num_questions)
-    result = tutor.query(prompt, response_format="explanation")
-    return result["response"]
+    return tutor.query(prompt, response_format="explanation")
